@@ -37,8 +37,9 @@
         .prize-rank { width: 45px; text-align: center; }
         .prize-name { flex: 1; font-weight: bold; font-size: 16px; margin-left: 5px; }
         .prize-score { text-align: right; }
-        .prize-net { color: #b45309; font-weight: bold; font-size: 17px; }
-        .prize-detail { color: #92400e; font-size: 12px; margin-top: 4px; line-height: 1.4; }
+        /* 타수 글자를 검은색으로 변경 */
+        .prize-net { color: #111; font-weight: bold; font-size: 17px; }
+        .prize-detail { color: #333; font-size: 12px; margin-top: 4px; line-height: 1.4; }
         .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
     </style>
 </head>
@@ -110,6 +111,13 @@
         return `<span class="badge badge-normal">${rank}</span>`;
     }
 
+    // ★ 추가: 오버파 색상 지정 함수 (파란색/빨간색/검은색)
+    function formatOverPar(score) {
+        if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`; // 파란색
+        if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;  // 빨간색
+        return `<span style="color:#111;">E</span>`;                            // 이븐파는 검은색
+    }
+
     async function fetchData() {
         try {
             const response = await fetch(CSV_URL);
@@ -141,7 +149,6 @@
         let scoreIdx = headers.findIndex(h => h.includes('타수'));
         let prizeIdx = headers.findIndex(h => h.includes('상금전') || h.includes('참여여부') || h.includes('상금전 참여 여부'));
 
-        // ★ 수정: 이름 뒤에 상금전 여부 추가된 폼 구조를 자동으로 반영
         if (dateIdx === -1 || nameIdx === -1 || scoreIdx === -1) {
             if (headers[0].includes('타임스탬프') || headers[0].includes('Timestamp')) {
                 dateIdx = 1; nameIdx = 2; prizeIdx = 3; scoreIdx = 4;
@@ -221,7 +228,7 @@
                 const netScore = r.totalScore - handi;
                 const currentCount = runningStats[r.name].count + 1; 
                 return { name: r.name, netScore: netScore, score: r.totalScore, count: currentCount, prizeJoin: r.prizeJoin };
-            }).filter(r => r.prizeJoin === '참여'); // 상금전 참여자끼리만 순위 산정
+            }).filter(r => r.prizeJoin === '참여'); 
 
             dailyResults.sort((a, b) => {
                 if (a.netScore === b.netScore) return b.count - a.count;
@@ -235,7 +242,6 @@
             let maxImprovement = -Infinity;
             let mostImprovedName = null;
             
-            // 단축왕은 상금전 참여 여부와 무관하게 dailyRecords 전체 대상에서 계산
             dailyRecords.forEach(r => {
                 const hist = runningStats[r.name].history;
                 if (hist.length > 0) {
@@ -283,7 +289,6 @@
         const latestRecords = records.filter(r => r.date === latestDate);
         if (latestRecords.length === 0) return;
 
-        // ★ 1. 노력왕(단축왕) 먼저 계산 (전체 인원 대상)
         let maxImprovement = -Infinity;
         let mostImprovedPlayer = null;
 
@@ -306,7 +311,6 @@
             }
         });
 
-        // 2. 상금전 순위 명단 추리기
         const prizeResults = latestRecords.map(r => {
             const userPast = pastRecords.filter(p => p.name === r.name);
             let handi = 0;
@@ -331,13 +335,12 @@
         const winnersDiv = document.getElementById('prizeWinners');
         winnersDiv.innerHTML = '';
         
-        // ★ 3. 상금 계산 로직 적용 (총 상금에서 단축왕 5천원 선 차감)
         const numPrizeParticipants = prizeResults.length;
         const totalPrize = numPrizeParticipants * 5000;
         const effortPrize = mostImprovedPlayer ? 5000 : 0;
         
         let rankPrizePool = totalPrize - effortPrize;
-        if (rankPrizePool < 0) rankPrizePool = 0; // 혹시 마이너스가 될 경우 대비
+        if (rankPrizePool < 0) rankPrizePool = 0; 
 
         if (numPrizeParticipants > 0) {
             winnersDiv.innerHTML = `<div style="text-align:center; margin-bottom:12px; font-size:14px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">
@@ -350,14 +353,13 @@
         for (let i = 0; i < prizeResults.length; i++) {
             const p = prizeResults[i];
             
-            let overParStr = p.overPar === 0 ? 'E' : (p.overPar > 0 ? `+${p.overPar}` : `${p.overPar}`);
-            let netOverPar = p.netScore - 72;
-            let netOverParStr = netOverPar === 0 ? 'E' : (netOverPar > 0 ? `+${netOverPar}` : `${netOverPar}`);
+            // ★ 수정: 오버파 점수에 컬러 적용
+            let overParHtml = formatOverPar(p.overPar);
+            let netOverParHtml = formatOverPar(p.netScore - 72);
             let handiStr = p.handi === 0 ? '0' : (p.handi > 0 ? `+${p.handi}` : p.handi);
             
-            let calcText = `실제 ${p.totalScore}타(${overParStr}) - 핸디(${handiStr})<br><span style="color:#64748b;">(누적 ${p.count}회 참여)</span>`;
+            let calcText = `실제 ${p.totalScore}타(${overParHtml}) - 핸디(${handiStr})<br><span style="color:#64748b;">(누적 ${p.count}회 참여)</span>`;
             
-            // 단축왕 차감 후 남은 금액에서 1등 60%, 2등 30%, 3등 5000원 적용
             let prizeMoney = 0;
             if (i === 0 && numPrizeParticipants >= 1) prizeMoney = Math.floor((rankPrizePool * 0.6) / 5000) * 5000;
             else if (i === 1 && numPrizeParticipants >= 2) prizeMoney = Math.floor((rankPrizePool * 0.3) / 5000) * 5000;
@@ -370,14 +372,13 @@
                     <div class="prize-rank">${getRankBadge(i)}</div>
                     <div class="prize-name">${p.name} ${prizeMoneyHtml}</div>
                     <div class="prize-score">
-                        <div class="prize-net">${p.netScore}타(${netOverParStr})</div>
+                        <div class="prize-net">${p.netScore}타(${netOverParHtml})</div>
                         <div class="prize-detail">${calcText}</div>
                     </div>
                 </div>
             `;
         }
 
-        // 4. 노력왕 결과 UI 그리기 (상금 5천원 표시)
         const improvedDiv = document.getElementById('mostImproved');
         if (mostImprovedPlayer) {
             improvedDiv.innerHTML = `
@@ -467,13 +468,13 @@
                     shortDate = `${m}-${d}`;
                 }
             }
-            let sign = r.overPar > 0 ? '+' : '';
-            let overParDisplay = r.overPar === 0 ? 'E' : `${sign}${r.overPar}`;
+            // ★ 수정: 오버파 점수에 컬러 적용
+            let overParHtml = formatOverPar(r.overPar);
             
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${shortDate}</td>
-                <td><strong style="color:#2b6cb0;">${overParDisplay}</strong></td>
+                <td><strong>${overParHtml}</strong></td>
                 <td><strong>${r.totalScore}</strong>타</td>
             `;
             tbody.appendChild(tr);
