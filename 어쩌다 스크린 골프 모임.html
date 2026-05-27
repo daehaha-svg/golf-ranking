@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>어쩌다 스크린 골프 모임</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2, h3 { margin-top: 0; color: #1a365d; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px 5px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
+        th { background-color: #f8fafc; font-weight: bold; color: #4a5568; font-size: 13px; }
+        .summary-box { margin-top: 15px; padding: 10px; background-color: #ebf8ff; border-radius: 8px; text-align: center; font-weight: bold; color: #2b6cb0; font-size: 14px; }
+        .loading { text-align: center; color: #666; font-size: 14px; padding: 20px; }
+        .handicap { color: #e53e3e; font-weight: bold; font-size: 12px; }
+        .sub-text { font-size: 11px; color: #666; font-weight: normal; }
+        .award-text { font-size: 12px; line-height: 1.5; color: #1e40af; }
+        
+        .badge {
+            display: inline-flex; justify-content: center; align-items: center;
+            width: 28px; height: 28px; border-radius: 50%;
+            font-weight: 900; font-size: 14px; color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .badge-1 { background: linear-gradient(135deg, #FFD700, #FDB931); border: 2px solid #DAA520; width: 32px; height: 32px; font-size: 16px; }
+        .badge-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); border: 2px solid #9E9E9E; }
+        .badge-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); border: 2px solid #8B4513; }
+        .badge-normal { background: #f1f5f9; color: #64748b; font-weight: bold; border: none; text-shadow: none; box-shadow: none; font-size: 13px; }
+
+        .prize-card { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde68a; }
+        .prize-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background: white; border-radius: 8px; margin-bottom: 8px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .prize-rank { width: 45px; text-align: center; }
+        .prize-name { flex: 1; font-weight: bold; font-size: 16px; margin-left: 5px; }
+        .prize-score { text-align: right; }
+        .prize-net { color: #b45309; font-weight: bold; font-size: 17px; }
+        .prize-detail { color: #92400e; font-size: 12px; margin-top: 4px; line-height: 1.4; }
+        .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card prize-card" id="prizeSection" style="display: none;">
+        <h3>💰 최근 상금전 결과</h3>
+        <div id="prizeDateStr" style="text-align: center; color: #92400e; font-size: 13px; margin-top: -10px; margin-bottom: 15px;"></div>
+        
+        <div id="prizeWinners"></div>
+        <div id="mostImproved" class="improved-box"></div>
+    </div>
+
+    <div class="card">
+        <h2>🏆 어쩌다 스크린 골프 랭킹</h2>
+        <div id="loadingMsg" class="loading">최신 데이터를 불러오는 중입니다...</div>
+        <table id="rankingTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th style="width: 15%">순위</th>
+                    <th style="width: 25%">이름<br><span class="sub-text">(참여)</span></th>
+                    <th style="width: 25%">평균<br><span class="sub-text">(핸디)</span></th>
+                    <th style="width: 35%">누적 수상</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>🔍 개인별 상세 기록</h3>
+        <div class="form-group">
+            <select id="historyNameSelect" onchange="renderUserHistory()">
+                <option value="">기록을 볼 멤버를 선택하세요</option>
+            </select>
+        </div>
+        
+        <div id="historyContent" style="display: none;">
+            <div id="historySummary" class="summary-box"></div>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th>오버파</th>
+                        <th>타수</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ★ 본인의 구글 시트 웹게시 링크(CSV)
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
+
+    let records = [];
+    let globalStats = {};
+
+    function getRankBadge(index) {
+        const rank = index + 1;
+        if (rank === 1) return `<span class="badge badge-1">1</span>`;
+        if (rank === 2) return `<span class="badge badge-2">2</span>`;
+        if (rank === 3) return `<span class="badge badge-3">3</span>`;
+        return `<span class="badge badge-normal">${rank}</span>`;
+    }
+
+    async function fetchData() {
+        try {
+            const response = await fetch(CSV_URL);
+            const csvText = await response.text();
+            parseCSV(csvText);
+            
+            document.getElementById('loadingMsg').style.display = 'none';
+            document.getElementById('rankingTable').style.display = 'table';
+            
+            processStats();
+            renderPrizeMatch();
+            renderRanking();
+            updateNameDropdown();
+        } catch (error) {
+            document.getElementById('loadingMsg').innerText = '데이터를 불러오는데 실패했습니다.';
+            console.error(error);
+        }
+    }
+
+    function parseCSV(csvText) {
+        const lines = csvText.split('\n');
+        records = [];
+        
+        if (lines.length < 2) return;
+
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        let dateIdx = headers.findIndex(h => h.includes('날짜'));
+        let nameIdx = headers.findIndex(h => h.includes('이름'));
+        let scoreIdx = headers.findIndex(h => h.includes('타수'));
+        let prizeIdx = headers.findIndex(h => h.includes('상금전') || h.includes('참여여부') || h.includes('상금전 참여 여부'));
+
+        // ★ 수정: 이름 뒤에 상금전 여부 추가된 폼 구조를 자동으로 반영
+        if (dateIdx === -1 || nameIdx === -1 || scoreIdx === -1) {
+            if (headers[0].includes('타임스탬프') || headers[0].includes('Timestamp')) {
+                dateIdx = 1; nameIdx = 2; prizeIdx = 3; scoreIdx = 4;
+            } else {
+                dateIdx = 0; nameIdx = 1; prizeIdx = 2; scoreIdx = 3;
+            }
+        }
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const cols = line.split(',');
+            if (cols.length > Math.max(dateIdx, nameIdx, scoreIdx)) {
+                let date = cols[dateIdx].trim();
+                let name = cols[nameIdx].trim();
+                let rawScore = parseInt(cols[scoreIdx].trim().replace(/[^0-9\-]/g, '')); 
+                
+                let prizeJoin = '참여';
+                if (prizeIdx !== -1 && cols[prizeIdx]) {
+                    let pVal = cols[prizeIdx].trim();
+                    if (pVal.includes('미참여') || pVal.includes('안함')) prizeJoin = '미참여';
+                }
+                
+                if (!isNaN(rawScore) && name) {
+                    let totalScore, overPar;
+                    
+                    if (rawScore < 50 && rawScore > -40) {
+                        overPar = rawScore;
+                        totalScore = 72 + rawScore;
+                    } else {
+                        totalScore = rawScore;
+                        overPar = rawScore - 72;
+                    }
+
+                    let cleanDate = date.replace(/\.\s+/g, '-').replace(/\./g, '').trim();
+                    records.push({
+                        date: cleanDate,
+                        name: name,
+                        totalScore: totalScore,
+                        overPar: overPar,
+                        prizeJoin: prizeJoin
+                    });
+                }
+            }
+        }
+        records.sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    function processStats() {
+        globalStats = {};
+        const players = [...new Set(records.map(r => r.name))];
+        
+        players.forEach(name => {
+            globalStats[name] = { 
+                totalScore: 0, count: 0, history: [], 
+                first: 0, second: 0, third: 0, improved: 0 
+            };
+        });
+
+        const dates = [...new Set(records.map(r => r.date))];
+        let runningStats = {};
+        players.forEach(name => {
+            runningStats[name] = { totalScore: 0, count: 0, history: [] };
+        });
+
+        dates.forEach(date => {
+            const dailyRecords = records.filter(r => r.date === date);
+            
+            const dailyResults = dailyRecords.map(r => {
+                let handi = 0;
+                if (runningStats[r.name].count > 0) {
+                    const pastAvg = Math.round(runningStats[r.name].totalScore / runningStats[r.name].count);
+                    handi = Math.round((pastAvg - 72) * 0.8);
+                }
+                
+                const netScore = r.totalScore - handi;
+                const currentCount = runningStats[r.name].count + 1; 
+                return { name: r.name, netScore: netScore, score: r.totalScore, count: currentCount, prizeJoin: r.prizeJoin };
+            }).filter(r => r.prizeJoin === '참여'); // 상금전 참여자끼리만 순위 산정
+
+            dailyResults.sort((a, b) => {
+                if (a.netScore === b.netScore) return b.count - a.count;
+                return a.netScore - b.netScore;
+            });
+
+            if (dailyResults.length > 0) globalStats[dailyResults[0].name].first += 1;
+            if (dailyResults.length > 1) globalStats[dailyResults[1].name].second += 1;
+            if (dailyResults.length > 2) globalStats[dailyResults[2].name].third += 1;
+
+            let maxImprovement = -Infinity;
+            let mostImprovedName = null;
+            
+            // 단축왕은 상금전 참여 여부와 무관하게 dailyRecords 전체 대상에서 계산
+            dailyRecords.forEach(r => {
+                const hist = runningStats[r.name].history;
+                if (hist.length > 0) {
+                    const prevScore = hist[hist.length - 1]; 
+                    const currentScore = r.totalScore;
+                    const improvement = prevScore - currentScore; 
+                    if (improvement > 0 && improvement > maxImprovement) {
+                        maxImprovement = improvement;
+                        mostImprovedName = r.name;
+                    }
+                }
+            });
+
+            if (mostImprovedName) {
+                globalStats[mostImprovedName].improved += 1;
+            }
+            
+            dailyRecords.forEach(r => {
+                runningStats[r.name].totalScore += r.totalScore;
+                runningStats[r.name].count += 1;
+                runningStats[r.name].history.push(r.totalScore);
+            });
+        });
+
+        records.forEach(r => {
+            globalStats[r.name].history.push(r);
+        });
+
+        for (let name in globalStats) {
+            globalStats[name].totalScore = runningStats[name].totalScore;
+            globalStats[name].count = runningStats[name].count;
+            const avg = Math.round(globalStats[name].totalScore / globalStats[name].count);
+            globalStats[name].avg = avg;
+            globalStats[name].handicap = Math.round((avg - 72) * 0.8);
+        }
+    }
+
+    function renderPrizeMatch() {
+        if (records.length === 0) return;
+
+        const pastRecords = records.filter(r => r.date < records[records.length - 1].date);
+        const dates = [...new Set(records.map(r => r.date))];
+        const latestDate = dates[dates.length - 1]; 
+        
+        const latestRecords = records.filter(r => r.date === latestDate);
+        if (latestRecords.length === 0) return;
+
+        // ★ 1. 노력왕(단축왕) 먼저 계산 (전체 인원 대상)
+        let maxImprovement = -Infinity;
+        let mostImprovedPlayer = null;
+
+        latestRecords.forEach(r => {
+            const history = globalStats[r.name].history;
+            if (history.length >= 2) {
+                const currentScore = r.totalScore;
+                const prevScore = history[history.length - 2].totalScore;
+                const improvement = prevScore - currentScore; 
+
+                if (improvement > 0 && improvement > maxImprovement) {
+                    maxImprovement = improvement;
+                    mostImprovedPlayer = {
+                        name: r.name,
+                        diff: improvement,
+                        prev: prevScore,
+                        curr: currentScore
+                    };
+                }
+            }
+        });
+
+        // 2. 상금전 순위 명단 추리기
+        const prizeResults = latestRecords.map(r => {
+            const userPast = pastRecords.filter(p => p.name === r.name);
+            let handi = 0;
+            if (userPast.length > 0) {
+                const pastTotal = userPast.reduce((sum, p) => sum + p.totalScore, 0);
+                const pastAvg = Math.round(pastTotal / userPast.length);
+                handi = Math.round((pastAvg - 72) * 0.8);
+            }
+            
+            const count = userPast.length + 1; 
+            const netScore = r.totalScore - handi;
+            return { ...r, handi, netScore, count };
+        }).filter(r => r.prizeJoin === '참여')
+          .sort((a, b) => {
+            if (a.netScore === b.netScore) return b.count - a.count;
+            return a.netScore - b.netScore;
+        });
+
+        document.getElementById('prizeSection').style.display = 'block';
+        document.getElementById('prizeDateStr').innerText = `(${latestDate} 경기 기준)`;
+
+        const winnersDiv = document.getElementById('prizeWinners');
+        winnersDiv.innerHTML = '';
+        
+        // ★ 3. 상금 계산 로직 적용 (총 상금에서 단축왕 5천원 선 차감)
+        const numPrizeParticipants = prizeResults.length;
+        const totalPrize = numPrizeParticipants * 5000;
+        const effortPrize = mostImprovedPlayer ? 5000 : 0;
+        
+        let rankPrizePool = totalPrize - effortPrize;
+        if (rankPrizePool < 0) rankPrizePool = 0; // 혹시 마이너스가 될 경우 대비
+
+        if (numPrizeParticipants > 0) {
+            winnersDiv.innerHTML = `<div style="text-align:center; margin-bottom:12px; font-size:14px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">
+                상금전 참가: ${numPrizeParticipants}명 / 총 상금: ${totalPrize.toLocaleString()}원
+            </div>`;
+        } else {
+            winnersDiv.innerHTML = `<div style="text-align:center; padding:10px; color:#6b7280;">이번 경기는 상금전 참여자가 없습니다.</div>`;
+        }
+
+        for (let i = 0; i < prizeResults.length; i++) {
+            const p = prizeResults[i];
+            
+            let overParStr = p.overPar === 0 ? 'E' : (p.overPar > 0 ? `+${p.overPar}` : `${p.overPar}`);
+            let netOverPar = p.netScore - 72;
+            let netOverParStr = netOverPar === 0 ? 'E' : (netOverPar > 0 ? `+${netOverPar}` : `${netOverPar}`);
+            let handiStr = p.handi === 0 ? '0' : (p.handi > 0 ? `+${p.handi}` : p.handi);
+            
+            let calcText = `실제 ${p.totalScore}타(${overParStr}) - 핸디(${handiStr})<br><span style="color:#64748b;">(누적 ${p.count}회 참여)</span>`;
+            
+            // 단축왕 차감 후 남은 금액에서 1등 60%, 2등 30%, 3등 5000원 적용
+            let prizeMoney = 0;
+            if (i === 0 && numPrizeParticipants >= 1) prizeMoney = Math.floor((rankPrizePool * 0.6) / 5000) * 5000;
+            else if (i === 1 && numPrizeParticipants >= 2) prizeMoney = Math.floor((rankPrizePool * 0.3) / 5000) * 5000;
+            else if (i === 2 && numPrizeParticipants >= 3) prizeMoney = 5000;
+
+            let prizeMoneyHtml = prizeMoney > 0 ? `<span style="color:#e53e3e; font-size:13px; font-weight:900; margin-left:5px;">💰${prizeMoney.toLocaleString()}원</span>` : '';
+
+            winnersDiv.innerHTML += `
+                <div class="prize-item">
+                    <div class="prize-rank">${getRankBadge(i)}</div>
+                    <div class="prize-name">${p.name} ${prizeMoneyHtml}</div>
+                    <div class="prize-score">
+                        <div class="prize-net">${p.netScore}타(${netOverParStr})</div>
+                        <div class="prize-detail">${calcText}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 4. 노력왕 결과 UI 그리기 (상금 5천원 표시)
+        const improvedDiv = document.getElementById('mostImproved');
+        if (mostImprovedPlayer) {
+            improvedDiv.innerHTML = `
+                <div style="font-size: 13px; color: #1e40af; margin-bottom: 5px;">🔥 이주의 단축왕 (직전 경기 대비)</div>
+                <strong style="font-size: 16px; color: #1d4ed8;">${mostImprovedPlayer.name}</strong> 님 
+                <span style="color:#e53e3e; font-size:13px; font-weight:900; margin-left:3px;">💰5,000원</span><br>
+                <span style="color: #ef4444; font-weight: bold;">(-${mostImprovedPlayer.diff}타 단축!)</span><br>
+                <span style="font-size: 12px; color: #6b7280;">직전 ${mostImprovedPlayer.prev}타 ➔ 이번 ${mostImprovedPlayer.curr}타</span>
+            `;
+        } else {
+            improvedDiv.innerHTML = `<span style="color: #6b7280; font-size: 13px;">이번 경기는 기록을 단축한 멤버가 없습니다 🥲</span>`;
+        }
+    }
+
+    function renderRanking() {
+        const tbody = document.querySelector('#rankingTable tbody');
+        tbody.innerHTML = '';
+
+        const ranking = Object.keys(globalStats).map(name => {
+            return {
+                name: name,
+                avg: globalStats[name].avg,
+                handicap: globalStats[name].handicap,
+                count: globalStats[name].count,
+                first: globalStats[name].first,
+                second: globalStats[name].second,
+                third: globalStats[name].third,
+                improved: globalStats[name].improved
+            };
+        }).sort((a, b) => a.avg - b.avg);
+
+        ranking.forEach((r, index) => {
+            const tr = document.createElement('tr');
+            
+            let rankIcon = getRankBadge(index);
+            let handiDisplay = r.handicap === 0 ? '0' : (r.handicap > 0 ? `+${r.handicap}` : r.handicap);
+
+            let awardsText = [];
+            if (r.first > 0) awardsText.push(`1등 ${r.first}회`);
+            if (r.second > 0) awardsText.push(`2등 ${r.second}회`);
+            if (r.third > 0) awardsText.push(`3등 ${r.third}회`);
+            if (r.improved > 0) awardsText.push(`단축 ${r.improved}회`);
+            let awardStr = awardsText.length > 0 ? awardsText.join('<br>') : '-';
+
+            tr.innerHTML = `
+                <td>${rankIcon}</td>
+                <td><strong>${r.name}</strong><br><span class="sub-text">${r.count}회 참여</span></td>
+                <td>${r.avg}타<br><span class="handicap">(${handiDisplay})</span></td>
+                <td class="award-text">${awardStr}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateNameDropdown() {
+        const select = document.getElementById('historyNameSelect');
+        const names = Object.keys(globalStats).sort();
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.text = name;
+            select.add(option);
+        });
+    }
+
+    function renderUserHistory() {
+        const selectedName = document.getElementById('historyNameSelect').value;
+        const contentDiv = document.getElementById('historyContent');
+        const summaryDiv = document.getElementById('historySummary');
+        const tbody = document.querySelector('#historyTable tbody');
+        
+        if (!selectedName) {
+            contentDiv.style.display = 'none';
+            return;
+        }
+
+        const userRecords = [...globalStats[selectedName].history].reverse(); 
+
+        tbody.innerHTML = '';
+        userRecords.forEach(r => {
+            let shortDate = r.date;
+            if(r.date.includes('-')) {
+                const parts = r.date.split('-');
+                if(parts.length >= 3) {
+                    let m = parts[1].padStart(2, '0');
+                    let d = parts[2].padStart(2, '0');
+                    shortDate = `${m}-${d}`;
+                }
+            }
+            let sign = r.overPar > 0 ? '+' : '';
+            let overParDisplay = r.overPar === 0 ? 'E' : `${sign}${r.overPar}`;
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${shortDate}</td>
+                <td><strong style="color:#2b6cb0;">${overParDisplay}</strong></td>
+                <td><strong>${r.totalScore}</strong>타</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const stats = globalStats[selectedName];
+        let displayHandi = stats.handicap === 0 ? '0' : (stats.handicap > 0 ? `+${stats.handicap}` : stats.handicap);
+        summaryDiv.innerHTML = `평균 <strong>${stats.avg}</strong>타 | 다음 경기 핸디 <strong>${displayHandi}</strong>`;
+        contentDiv.style.display = 'block';
+    }
+
+    fetchData();
+</script>
+
+</body>
+</html>
