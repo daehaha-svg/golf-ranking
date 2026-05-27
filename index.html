@@ -16,7 +16,6 @@
         th { background-color: #f8fafc; font-weight: bold; color: #4a5568; font-size: 13px; }
         .summary-box { margin-top: 15px; padding: 10px; background-color: #ebf8ff; border-radius: 8px; text-align: center; font-weight: bold; color: #2b6cb0; font-size: 14px; }
         .loading { text-align: center; color: #666; font-size: 14px; padding: 20px; }
-        .handicap { color: #e53e3e; font-weight: bold; font-size: 12px; }
         .sub-text { font-size: 11px; color: #666; font-weight: normal; }
         .award-text { font-size: 12px; line-height: 1.5; color: #1e40af; }
         
@@ -37,7 +36,6 @@
         .prize-rank { width: 45px; text-align: center; }
         .prize-name { flex: 1; font-weight: bold; font-size: 16px; margin-left: 5px; }
         .prize-score { text-align: right; }
-        /* 타수 글자를 검은색으로 변경 */
         .prize-net { color: #111; font-weight: bold; font-size: 17px; }
         .prize-detail { color: #333; font-size: 12px; margin-top: 4px; line-height: 1.4; }
         .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
@@ -111,11 +109,18 @@
         return `<span class="badge badge-normal">${rank}</span>`;
     }
 
-    // ★ 추가: 오버파 색상 지정 함수 (파란색/빨간색/검은색)
+    // 오버파 색상 지정 함수 (파란색/빨간색/검은색 E)
     function formatOverPar(score) {
-        if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`; // 파란색
-        if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;  // 빨간색
-        return `<span style="color:#111;">E</span>`;                            // 이븐파는 검은색
+        if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
+        if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
+        return `<span style="color:#111;">E</span>`;
+    }
+
+    // ★ 추가: 핸디캡 전용 색상 지정 함수 (파란색/빨간색/검은색 0)
+    function formatHandi(score) {
+        if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
+        if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
+        return `<span style="color:#111;">0</span>`;
     }
 
     async function fetchData() {
@@ -353,12 +358,12 @@
         for (let i = 0; i < prizeResults.length; i++) {
             const p = prizeResults[i];
             
-            // ★ 수정: 오버파 점수에 컬러 적용
             let overParHtml = formatOverPar(p.overPar);
             let netOverParHtml = formatOverPar(p.netScore - 72);
-            let handiStr = p.handi === 0 ? '0' : (p.handi > 0 ? `+${p.handi}` : p.handi);
+            // ★ 수정: 핸디캡 색상 함수 적용
+            let handiHtml = formatHandi(p.handi); 
             
-            let calcText = `실제 ${p.totalScore}타(${overParHtml}) - 핸디(${handiStr})<br><span style="color:#64748b;">(누적 ${p.count}회 참여)</span>`;
+            let calcText = `실제 ${p.totalScore}타(${overParHtml}) - 핸디(${handiHtml})<br><span style="color:#64748b;">(누적 ${p.count}회 참여)</span>`;
             
             let prizeMoney = 0;
             if (i === 0 && numPrizeParticipants >= 1) prizeMoney = Math.floor((rankPrizePool * 0.6) / 5000) * 5000;
@@ -414,7 +419,8 @@
             const tr = document.createElement('tr');
             
             let rankIcon = getRankBadge(index);
-            let handiDisplay = r.handicap === 0 ? '0' : (r.handicap > 0 ? `+${r.handicap}` : r.handicap);
+            // ★ 수정: 핸디캡 색상 함수 적용
+            let handiDisplay = formatHandi(r.handicap);
 
             let awardsText = [];
             if (r.first > 0) awardsText.push(`1등 ${r.first}회`);
@@ -426,7 +432,7 @@
             tr.innerHTML = `
                 <td>${rankIcon}</td>
                 <td><strong>${r.name}</strong><br><span class="sub-text">${r.count}회 참여</span></td>
-                <td>${r.avg}타<br><span class="handicap">(${handiDisplay})</span></td>
+                <td>${r.avg}타<br><span style="font-size:12px; font-weight:bold;">(${handiDisplay})</span></td>
                 <td class="award-text">${awardStr}</td>
             `;
             tbody.appendChild(tr);
@@ -468,7 +474,6 @@
                     shortDate = `${m}-${d}`;
                 }
             }
-            // ★ 수정: 오버파 점수에 컬러 적용
             let overParHtml = formatOverPar(r.overPar);
             
             const tr = document.createElement('tr');
@@ -481,7 +486,8 @@
         });
 
         const stats = globalStats[selectedName];
-        let displayHandi = stats.handicap === 0 ? '0' : (stats.handicap > 0 ? `+${stats.handicap}` : stats.handicap);
+        // ★ 수정: 핸디캡 색상 함수 적용
+        let displayHandi = formatHandi(stats.handicap);
         summaryDiv.innerHTML = `평균 <strong>${stats.avg}</strong>타 | 다음 경기 핸디 <strong>${displayHandi}</strong>`;
         contentDiv.style.display = 'block';
     }
