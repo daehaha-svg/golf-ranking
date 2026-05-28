@@ -170,7 +170,6 @@
                 let name = cols[nameIdx].trim();
                 let rawScore = parseInt(cols[scoreIdx].trim().replace(/[^0-9\-]/g, '')); 
                 
-                // ★ 수정: 'Y', 'N' 값을 정확하게 인식하도록 변경
                 let prizeJoin = '참여';
                 if (prizeIdx !== -1 && cols[prizeIdx]) {
                     let pVal = cols[prizeIdx].trim().toUpperCase();
@@ -248,7 +247,8 @@
             let maxImprovement = -Infinity;
             let mostImprovedName = null;
             
-            dailyRecords.forEach(r => {
+            // ★ 수정: 단축왕 배지도 상금전 참여자(Y) 중에서만 수여
+            dailyRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
                 const hist = runningStats[r.name].history;
                 if (hist.length > 0) {
                     const prevScore = hist[hist.length - 1]; 
@@ -298,7 +298,8 @@
         let maxImprovement = -Infinity;
         let mostImprovedPlayer = null;
 
-        latestRecords.forEach(r => {
+        // ★ 수정: 최근 경기 단축왕 상금도 상금전 참여자(Y) 중에서만 계산
+        latestRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
             const history = globalStats[r.name].history;
             if (history.length >= 2) {
                 const currentScore = r.totalScore;
@@ -341,12 +342,11 @@
         const winnersDiv = document.getElementById('prizeWinners');
         winnersDiv.innerHTML = '';
         
-        // ★ 수정: 오차가 발생하지 않는 상금 배분 공식
         const numPrizeParticipants = prizeResults.length;
         const totalPrize = numPrizeParticipants * 5000;
         const effortPrize = mostImprovedPlayer ? 5000 : 0;
         
-        let poolForRanks = totalPrize - effortPrize; // 단축왕 상금을 제외한 나머지 풀
+        let poolForRanks = totalPrize - effortPrize; 
         if (poolForRanks < 0) poolForRanks = 0;
 
         let prize1st = 0;
@@ -354,17 +354,16 @@
         let prize3rd = 0;
 
         if (numPrizeParticipants >= 3) {
-            prize3rd = 5000; // 3등 무조건 5천원
+            prize3rd = 5000; 
             poolForRanks -= prize3rd; 
             
-            // 1등은 총상금의 60%를 5천원 단위로 절사
             let calc1st = Math.floor((totalPrize * 0.6) / 5000) * 5000;
-            if (calc1st > poolForRanks) calc1st = poolForRanks; // 혹시 남은 금액보다 크면 남은 금액까지만
+            if (calc1st > poolForRanks) calc1st = poolForRanks; 
             
             prize1st = calc1st;
-            prize2nd = poolForRanks - prize1st; // 잔돈 등 남은 금액은 모조리 2등에게
+            prize2nd = poolForRanks - prize1st; 
         } else if (numPrizeParticipants === 2) {
-            prize1st = poolForRanks; // 2명이면 1등이 다 가져감
+            prize1st = poolForRanks; 
         } else if (numPrizeParticipants === 1) {
             prize1st = poolForRanks;
         }
