@@ -109,14 +109,12 @@
         return `<span class="badge badge-normal">${rank}</span>`;
     }
 
-    // 오버파 색상 지정 함수 (파란색/빨간색/검은색 E)
     function formatOverPar(score) {
         if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
         if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
         return `<span style="color:#111;">E</span>`;
     }
 
-    // ★ 추가: 핸디캡 전용 색상 지정 함수 (파란색/빨간색/검은색 0)
     function formatHandi(score) {
         if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
         if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
@@ -152,13 +150,13 @@
         let dateIdx = headers.findIndex(h => h.includes('날짜'));
         let nameIdx = headers.findIndex(h => h.includes('이름'));
         let scoreIdx = headers.findIndex(h => h.includes('타수'));
-        let prizeIdx = headers.findIndex(h => h.includes('상금전') || h.includes('참여여부') || h.includes('상금전 참여 여부'));
+        let prizeIdx = headers.findIndex(h => h.includes('상금전') || h.includes('참여여부') || h.includes('참가비'));
 
         if (dateIdx === -1 || nameIdx === -1 || scoreIdx === -1) {
             if (headers[0].includes('타임스탬프') || headers[0].includes('Timestamp')) {
-                dateIdx = 1; nameIdx = 2; prizeIdx = 3; scoreIdx = 4;
+                dateIdx = 1; nameIdx = 2; scoreIdx = 3; prizeIdx = 4;
             } else {
-                dateIdx = 0; nameIdx = 1; prizeIdx = 2; scoreIdx = 3;
+                dateIdx = 0; nameIdx = 1; scoreIdx = 2; prizeIdx = 3;
             }
         }
 
@@ -172,10 +170,13 @@
                 let name = cols[nameIdx].trim();
                 let rawScore = parseInt(cols[scoreIdx].trim().replace(/[^0-9\-]/g, '')); 
                 
+                // ★ 수정: 'Y', 'N' 값을 정확하게 인식하도록 변경
                 let prizeJoin = '참여';
                 if (prizeIdx !== -1 && cols[prizeIdx]) {
-                    let pVal = cols[prizeIdx].trim();
-                    if (pVal.includes('미참여') || pVal.includes('안함')) prizeJoin = '미참여';
+                    let pVal = cols[prizeIdx].trim().toUpperCase();
+                    if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함') || pVal.includes('N')) {
+                        prizeJoin = '미참여';
+                    }
                 }
                 
                 if (!isNaN(rawScore) && name) {
@@ -340,12 +341,33 @@
         const winnersDiv = document.getElementById('prizeWinners');
         winnersDiv.innerHTML = '';
         
+        // ★ 수정: 오차가 발생하지 않는 상금 배분 공식
         const numPrizeParticipants = prizeResults.length;
         const totalPrize = numPrizeParticipants * 5000;
         const effortPrize = mostImprovedPlayer ? 5000 : 0;
         
-        let rankPrizePool = totalPrize - effortPrize;
-        if (rankPrizePool < 0) rankPrizePool = 0; 
+        let poolForRanks = totalPrize - effortPrize; // 단축왕 상금을 제외한 나머지 풀
+        if (poolForRanks < 0) poolForRanks = 0;
+
+        let prize1st = 0;
+        let prize2nd = 0;
+        let prize3rd = 0;
+
+        if (numPrizeParticipants >= 3) {
+            prize3rd = 5000; // 3등 무조건 5천원
+            poolForRanks -= prize3rd; 
+            
+            // 1등은 총상금의 60%를 5천원 단위로 절사
+            let calc1st = Math.floor((totalPrize * 0.6) / 5000) * 5000;
+            if (calc1st > poolForRanks) calc1st = poolForRanks; // 혹시 남은 금액보다 크면 남은 금액까지만
+            
+            prize1st = calc1st;
+            prize2nd = poolForRanks - prize1st; // 잔돈 등 남은 금액은 모조리 2등에게
+        } else if (numPrizeParticipants === 2) {
+            prize1st = poolForRanks; // 2명이면 1등이 다 가져감
+        } else if (numPrizeParticipants === 1) {
+            prize1st = poolForRanks;
+        }
 
         if (numPrizeParticipants > 0) {
             winnersDiv.innerHTML = `<div style="text-align:center; margin-bottom:12px; font-size:14px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">
@@ -360,15 +382,14 @@
             
             let overParHtml = formatOverPar(p.overPar);
             let netOverParHtml = formatOverPar(p.netScore - 72);
-            // ★ 수정: 핸디캡 색상 함수 적용
             let handiHtml = formatHandi(p.handi); 
             
             let calcText = `실제 ${p.totalScore}타(${overParHtml}) - 핸디(${handiHtml})<br><span style="color:#64748b;">(누적 ${p.count}회 참여)</span>`;
             
             let prizeMoney = 0;
-            if (i === 0 && numPrizeParticipants >= 1) prizeMoney = Math.floor((rankPrizePool * 0.6) / 5000) * 5000;
-            else if (i === 1 && numPrizeParticipants >= 2) prizeMoney = Math.floor((rankPrizePool * 0.3) / 5000) * 5000;
-            else if (i === 2 && numPrizeParticipants >= 3) prizeMoney = 5000;
+            if (i === 0) prizeMoney = prize1st;
+            else if (i === 1) prizeMoney = prize2nd;
+            else if (i === 2) prizeMoney = prize3rd;
 
             let prizeMoneyHtml = prizeMoney > 0 ? `<span style="color:#e53e3e; font-size:13px; font-weight:900; margin-left:5px;">💰${prizeMoney.toLocaleString()}원</span>` : '';
 
@@ -419,7 +440,6 @@
             const tr = document.createElement('tr');
             
             let rankIcon = getRankBadge(index);
-            // ★ 수정: 핸디캡 색상 함수 적용
             let handiDisplay = formatHandi(r.handicap);
 
             let awardsText = [];
@@ -486,7 +506,6 @@
         });
 
         const stats = globalStats[selectedName];
-        // ★ 수정: 핸디캡 색상 함수 적용
         let displayHandi = formatHandi(stats.handicap);
         summaryDiv.innerHTML = `평균 <strong>${stats.avg}</strong>타 | 다음 경기 핸디 <strong>${displayHandi}</strong>`;
         contentDiv.style.display = 'block';
