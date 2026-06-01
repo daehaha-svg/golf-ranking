@@ -95,21 +95,8 @@
 </div>
 
 <script>
-    // ==========================================
-    // ★ [1] 구글 시트 웹게시 링크
-    // ==========================================
+    // ★ 본인의 구글 시트 웹게시 링크(CSV)
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
-
-    // ==========================================
-    // ★ [2] 신입/특정 멤버 수동 핸디캡 설정 (프로그램 내부 관리)
-    // ==========================================
-    // 아래에 '이름': 핸디캡숫자 형식으로 적어주세요. 
-    // 예: '홍길동': 15 (쉼표로 구분하여 여러 명 추가 가능)
-    const MANUAL_HANDICAPS = {
-        '김신입': 20,
-        '이초보': 15
-    };
-    // ==========================================
 
     let records = [];
     let globalStats = {};
@@ -240,11 +227,8 @@
                 let handi = 0;
                 if (runningStats[r.name].count > 0) {
                     const pastAvg = Math.round(runningStats[r.name].totalScore / runningStats[r.name].count);
-                    // ★ 기존 멤버 핸디캡 70% 적용
+                    // ★ 핸디캡 70% 적용
                     handi = Math.round((pastAvg - 72) * 0.7);
-                } else if (MANUAL_HANDICAPS[r.name] !== undefined) {
-                    // ★ 앱 내부에 등록된 수동 핸디캡 적용 (과거 기록 없을 때만)
-                    handi = MANUAL_HANDICAPS[r.name];
                 }
                 
                 const netScore = r.totalScore - handi;
@@ -266,7 +250,6 @@
             
             dailyRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
                 const hist = runningStats[r.name].history;
-                // ★ 첫 참석자는 hist.length가 0이므로 단축왕 심사에서 원천 제외
                 if (hist.length > 0) {
                     const prevScore = hist[hist.length - 1]; 
                     const currentScore = r.totalScore;
@@ -298,7 +281,7 @@
             globalStats[name].count = runningStats[name].count;
             const avg = Math.round(globalStats[name].totalScore / globalStats[name].count);
             globalStats[name].avg = avg;
-            // ★ 최종 랭킹 표시용 핸디캡 70% 적용
+            // ★ 최종 랭킹 핸디캡 70% 적용
             globalStats[name].handicap = Math.round((avg - 72) * 0.7);
         }
     }
@@ -318,7 +301,6 @@
 
         latestRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
             const history = globalStats[r.name].history;
-            // ★ 최소 2경기 이상 참여해야 이전 기록 비교 가능
             if (history.length >= 2) {
                 const currentScore = r.totalScore;
                 const prevScore = history[history.length - 2].totalScore;
@@ -344,9 +326,6 @@
                 const pastAvg = Math.round(pastTotal / userPast.length);
                 // ★ 상금전 핸디캡 70% 적용
                 handi = Math.round((pastAvg - 72) * 0.7);
-            } else if (MANUAL_HANDICAPS[r.name] !== undefined) {
-                // ★ 상금전 수동 핸디캡 우선 적용
-                handi = MANUAL_HANDICAPS[r.name];
             }
             
             const count = userPast.length + 1; 
@@ -515,3 +494,25 @@
                     shortDate = `${m}-${d}`;
                 }
             }
+            let overParHtml = formatOverPar(r.overPar);
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${shortDate}</td>
+                <td><strong>${overParHtml}</strong></td>
+                <td><strong>${r.totalScore}</strong>타</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const stats = globalStats[selectedName];
+        let displayHandi = formatHandi(stats.handicap);
+        summaryDiv.innerHTML = `평균 <strong>${stats.avg}</strong>타 | 다음 경기 핸디 <strong>${displayHandi}</strong>`;
+        contentDiv.style.display = 'block';
+    }
+
+    fetchData();
+</script>
+
+</body>
+</html>
