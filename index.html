@@ -95,8 +95,34 @@
 </div>
 
 <script>
-    // ★ 본인의 구글 시트 웹게시 링크(CSV)
+    // =====================================================================
+    // ★ [1] 구글 시트 웹게시 링크
+    // ==========================================
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
+
+    // =====================================================================
+    // ★ [2] 수동 설정창 (이 구역 안에서만 자유롭게 수정하세요!)
+    // =====================================================================
+
+    // ⛳ 1. 누적 수상 기록 추가 (과거 G핸디전 등 누락된 내역)
+    // 입력 방법: '이름': { first: 1등횟수, second: 2등횟수, third: 3등횟수, improved: 단축왕횟수 }
+    const MANUAL_AWARDS = {
+        '심덕보': { first: 1, second: 0, third: 0, improved: 0 },
+        '성주암': { first: 0, second: 1, third: 0, improved: 0 },
+        // 필요시 아래에 복사해서 덧붙이세요.
+    };
+
+    // ⛳ 2. 신규 회원 수동 핸디캡 (기존 타수 기록이 없을 때만 적용됨)
+    // 입력 방법: '이름': 핸디캡숫자
+    const MANUAL_HANDICAPS = {
+        '김신입': 15,
+        '이초보': 20,
+        // 필요시 아래에 복사해서 덧붙이세요.
+    };
+
+    // =====================================================================
+    // (이 아래부터는 핵심 프로그램 코드입니다. 건드리지 마세요!)
+    // =====================================================================
 
     let records = [];
     let globalStats = {};
@@ -207,6 +233,10 @@
         globalStats = {};
         const players = [...new Set(records.map(r => r.name))];
         
+        // 수동 설정에 있는 사람도 랭킹 목록에 포함되도록 세팅
+        Object.keys(MANUAL_AWARDS).forEach(n => { if(!players.includes(n)) players.push(n); });
+        Object.keys(MANUAL_HANDICAPS).forEach(n => { if(!players.includes(n)) players.push(n); });
+
         players.forEach(name => {
             globalStats[name] = { 
                 totalScore: 0, count: 0, history: [], 
@@ -227,8 +257,11 @@
                 let handi = 0;
                 if (runningStats[r.name].count > 0) {
                     const pastAvg = Math.round(runningStats[r.name].totalScore / runningStats[r.name].count);
-                    // ★ 핸디캡 70% 적용
+                    // 핸디캡 70% 적용
                     handi = Math.round((pastAvg - 72) * 0.7);
+                } else if (MANUAL_HANDICAPS[r.name] !== undefined) {
+                    // 과거 기록 없을 시 수동 핸디캡 우선 적용
+                    handi = MANUAL_HANDICAPS[r.name];
                 }
                 
                 const netScore = r.totalScore - handi;
@@ -250,6 +283,7 @@
             
             dailyRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
                 const hist = runningStats[r.name].history;
+                // 이전 기록(hist)이 최소 1개 있어야 단축왕 심사 포함
                 if (hist.length > 0) {
                     const prevScore = hist[hist.length - 1]; 
                     const currentScore = r.totalScore;
@@ -273,16 +307,31 @@
         });
 
         records.forEach(r => {
-            globalStats[r.name].history.push(r);
+            if(globalStats[r.name]) {
+                globalStats[r.name].history.push(r);
+            }
         });
 
         for (let name in globalStats) {
             globalStats[name].totalScore = runningStats[name].totalScore;
             globalStats[name].count = runningStats[name].count;
-            const avg = Math.round(globalStats[name].totalScore / globalStats[name].count);
-            globalStats[name].avg = avg;
-            // ★ 최종 랭킹 핸디캡 70% 적용
-            globalStats[name].handicap = Math.round((avg - 72) * 0.7);
+            
+            if (globalStats[name].count > 0) {
+                const avg = Math.round(globalStats[name].totalScore / globalStats[name].count);
+                globalStats[name].avg = avg;
+                globalStats[name].handicap = Math.round((avg - 72) * 0.7);
+            } else {
+                globalStats[name].avg = 0;
+                globalStats[name].handicap = MANUAL_HANDICAPS[name] !== undefined ? MANUAL_HANDICAPS[name] : 0;
+            }
+
+            // ★ 설정창에 적어둔 수동 누적 수상 기록 합산
+            if (MANUAL_AWARDS[name]) {
+                globalStats[name].first += MANUAL_AWARDS[name].first || 0;
+                globalStats[name].second += MANUAL_AWARDS[name].second || 0;
+                globalStats[name].third += MANUAL_AWARDS[name].third || 0;
+                globalStats[name].improved += MANUAL_AWARDS[name].improved || 0;
+            }
         }
     }
 
@@ -301,6 +350,7 @@
 
         latestRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
             const history = globalStats[r.name].history;
+            // 과거 기록이 최소 2경기 이상 있어야 단축왕 선정
             if (history.length >= 2) {
                 const currentScore = r.totalScore;
                 const prevScore = history[history.length - 2].totalScore;
@@ -324,8 +374,9 @@
             if (userPast.length > 0) {
                 const pastTotal = userPast.reduce((sum, p) => sum + p.totalScore, 0);
                 const pastAvg = Math.round(pastTotal / userPast.length);
-                // ★ 상금전 핸디캡 70% 적용
                 handi = Math.round((pastAvg - 72) * 0.7);
+            } else if (MANUAL_HANDICAPS[r.name] !== undefined) {
+                handi = MANUAL_HANDICAPS[r.name];
             }
             
             const count = userPast.length + 1; 
@@ -434,7 +485,12 @@
                 third: globalStats[name].third,
                 improved: globalStats[name].improved
             };
-        }).sort((a, b) => a.avg - b.avg);
+        }).sort((a, b) => {
+            // 평균 타수가 0인(아직 기록없는) 사람은 뒤로 밀기
+            if(a.avg === 0) return 1;
+            if(b.avg === 0) return -1;
+            return a.avg - b.avg;
+        });
 
         ranking.forEach((r, index) => {
             const tr = document.createElement('tr');
@@ -448,11 +504,14 @@
             if (r.third > 0) awardsText.push(`3등 ${r.third}회`);
             if (r.improved > 0) awardsText.push(`단축 ${r.improved}회`);
             let awardStr = awardsText.length > 0 ? awardsText.join('<br>') : '-';
+            
+            // 평균 타수 처리 (기록 없으면 - 표시)
+            let avgDisplay = r.avg > 0 ? `${r.avg}타` : `<span style="color:#a0aec0;">-</span>`;
 
             tr.innerHTML = `
                 <td>${rankIcon}</td>
                 <td><strong>${r.name}</strong><br><span class="sub-text">${r.count}회 참여</span></td>
-                <td>${r.avg}타<br><span style="font-size:12px; font-weight:bold;">(${handiDisplay})</span></td>
+                <td>${avgDisplay}<br><span style="font-size:12px; font-weight:bold;">(${handiDisplay})</span></td>
                 <td class="award-text">${awardStr}</td>
             `;
             tbody.appendChild(tr);
@@ -484,30 +543,35 @@
         const userRecords = [...globalStats[selectedName].history].reverse(); 
 
         tbody.innerHTML = '';
-        userRecords.forEach(r => {
-            let shortDate = r.date;
-            if(r.date.includes('-')) {
-                const parts = r.date.split('-');
-                if(parts.length >= 3) {
-                    let m = parts[1].padStart(2, '0');
-                    let d = parts[2].padStart(2, '0');
-                    shortDate = `${m}-${d}`;
+        if (userRecords.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="color:#a0aec0;">아직 경기 기록이 없습니다.</td></tr>`;
+        } else {
+            userRecords.forEach(r => {
+                let shortDate = r.date;
+                if(r.date.includes('-')) {
+                    const parts = r.date.split('-');
+                    if(parts.length >= 3) {
+                        let m = parts[1].padStart(2, '0');
+                        let d = parts[2].padStart(2, '0');
+                        shortDate = `${m}-${d}`;
+                    }
                 }
-            }
-            let overParHtml = formatOverPar(r.overPar);
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${shortDate}</td>
-                <td><strong>${overParHtml}</strong></td>
-                <td><strong>${r.totalScore}</strong>타</td>
-            `;
-            tbody.appendChild(tr);
-        });
+                let overParHtml = formatOverPar(r.overPar);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${shortDate}</td>
+                    <td><strong>${overParHtml}</strong></td>
+                    <td><strong>${r.totalScore}</strong>타</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
         const stats = globalStats[selectedName];
         let displayHandi = formatHandi(stats.handicap);
-        summaryDiv.innerHTML = `평균 <strong>${stats.avg}</strong>타 | 다음 경기 핸디 <strong>${displayHandi}</strong>`;
+        let avgStr = stats.avg > 0 ? stats.avg : '-';
+        summaryDiv.innerHTML = `평균 <strong>${avgStr}</strong>타 | 다음 경기 핸디 <strong>${displayHandi}</strong>`;
         contentDiv.style.display = 'block';
     }
 
