@@ -97,32 +97,26 @@
 <script>
     // =====================================================================
     // ★ [1] 구글 시트 웹게시 링크
-    // ==========================================
+    // =====================================================================
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
 
     // =====================================================================
-    // ★ [2] 수동 설정창 (이 구역 안에서만 자유롭게 수정하세요!)
+    // ★ [2] 수동 설정창
     // =====================================================================
 
     // ⛳ 1. 누적 수상 기록 추가 (과거 G핸디전 등 누락된 내역)
-    // 입력 방법: '이름': { first: 1등횟수, second: 2등횟수, third: 3등횟수, improved: 단축왕횟수 }
     const MANUAL_AWARDS = {
         '박성준': { first: 1, second: 0, third: 0, improved: 0 },
         '심덕보': { first: 0, second: 1, third: 0, improved: 0 },
-        '성주암': { first: 0, second: 0, third: 1, improved: 0 },
-                // 필요시 아래에 복사해서 덧붙이세요.
-    };
+        '성주암': { first: 0, second: 0, third: 1, improved: 0 },       
+     };
 
-    // ⛳ 2. 신규 회원 수동 핸디캡 (기존 타수 기록이 없을 때만 적용됨)
-    // 입력 방법: '이름': 핸디캡숫자
+    // ⛳ 2. 신규 회원 수동 핸디캡
     const MANUAL_HANDICAPS = {
-        '심정섭': 4,
+       '심정섭': 4,
         '김현택': 2,
-        // 필요시 아래에 복사해서 덧붙이세요.
     };
 
-    // =====================================================================
-    // (이 아래부터는 핵심 프로그램 코드입니다. 건드리지 마세요!)
     // =====================================================================
 
     let records = [];
@@ -207,7 +201,6 @@
                 
                 if (!isNaN(rawScore) && name) {
                     let totalScore, overPar;
-                    
                     if (rawScore < 50 && rawScore > -40) {
                         overPar = rawScore;
                         totalScore = 72 + rawScore;
@@ -216,7 +209,15 @@
                         overPar = rawScore - 72;
                     }
 
+                    // ★ 핵심 버그 해결: 월, 일을 무조건 두 자리(06-09)로 맞춰서 날짜 정렬 꼬임 방지
                     let cleanDate = date.replace(/\.\s+/g, '-').replace(/\./g, '').trim();
+                    if (cleanDate.includes('-')) {
+                        let parts = cleanDate.split('-');
+                        if (parts.length >= 3) {
+                            cleanDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                        }
+                    }
+
                     records.push({
                         date: cleanDate,
                         name: name,
@@ -227,6 +228,7 @@
                 }
             }
         }
+        // 이제 06월 09일 vs 06월 16일 등 숫자가 완벽하게 정렬됩니다.
         records.sort((a, b) => a.date.localeCompare(b.date));
     }
 
@@ -234,7 +236,6 @@
         globalStats = {};
         const players = [...new Set(records.map(r => r.name))];
         
-        // 수동 설정에 있는 사람도 랭킹 목록에 포함되도록 세팅
         Object.keys(MANUAL_AWARDS).forEach(n => { if(!players.includes(n)) players.push(n); });
         Object.keys(MANUAL_HANDICAPS).forEach(n => { if(!players.includes(n)) players.push(n); });
 
@@ -258,10 +259,8 @@
                 let handi = 0;
                 if (runningStats[r.name].count > 0) {
                     const pastAvg = Math.round(runningStats[r.name].totalScore / runningStats[r.name].count);
-                    // 핸디캡 70% 적용
                     handi = Math.round((pastAvg - 72) * 0.7);
                 } else if (MANUAL_HANDICAPS[r.name] !== undefined) {
-                    // 과거 기록 없을 시 수동 핸디캡 우선 적용
                     handi = MANUAL_HANDICAPS[r.name];
                 }
                 
@@ -284,7 +283,6 @@
             
             dailyRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
                 const hist = runningStats[r.name].history;
-                // 이전 기록(hist)이 최소 1개 있어야 단축왕 심사 포함
                 if (hist.length > 0) {
                     const prevScore = hist[hist.length - 1]; 
                     const currentScore = r.totalScore;
@@ -326,7 +324,6 @@
                 globalStats[name].handicap = MANUAL_HANDICAPS[name] !== undefined ? MANUAL_HANDICAPS[name] : 0;
             }
 
-            // ★ 설정창에 적어둔 수동 누적 수상 기록 합산
             if (MANUAL_AWARDS[name]) {
                 globalStats[name].first += MANUAL_AWARDS[name].first || 0;
                 globalStats[name].second += MANUAL_AWARDS[name].second || 0;
@@ -351,7 +348,6 @@
 
         latestRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
             const history = globalStats[r.name].history;
-            // 과거 기록이 최소 2경기 이상 있어야 단축왕 선정
             if (history.length >= 2) {
                 const currentScore = r.totalScore;
                 const prevScore = history[history.length - 2].totalScore;
@@ -406,7 +402,8 @@
         let prize2nd = 0;
         let prize3rd = 0;
 
-        if (numPrizeParticipants >= 3) {
+        // ★ 버그 해결: 3명 이하일 때의 상금 분배 로직 완벽 세분화
+        if (numPrizeParticipants >= 4) {
             prize3rd = 5000; 
             poolForRanks -= prize3rd; 
             
@@ -415,6 +412,15 @@
             
             prize1st = calc1st;
             prize2nd = poolForRanks - prize1st; 
+        } else if (numPrizeParticipants === 3) {
+            // 3명일 경우 3등 상금 생략, 1등과 2등이 나눠 가짐
+            let calc1st = Math.floor((totalPrize * 0.6) / 5000) * 5000;
+            if (calc1st > poolForRanks) calc1st = poolForRanks;
+            if (calc1st === 0 && poolForRanks > 0) calc1st = poolForRanks; 
+            
+            prize1st = calc1st;
+            prize2nd = poolForRanks - prize1st;
+            prize3rd = 0;
         } else if (numPrizeParticipants === 2) {
             prize1st = poolForRanks; 
         } else if (numPrizeParticipants === 1) {
@@ -487,7 +493,6 @@
                 improved: globalStats[name].improved
             };
         }).sort((a, b) => {
-            // 평균 타수가 0인(아직 기록없는) 사람은 뒤로 밀기
             if(a.avg === 0) return 1;
             if(b.avg === 0) return -1;
             return a.avg - b.avg;
@@ -506,7 +511,6 @@
             if (r.improved > 0) awardsText.push(`단축 ${r.improved}회`);
             let awardStr = awardsText.length > 0 ? awardsText.join('<br>') : '-';
             
-            // 평균 타수 처리 (기록 없으면 - 표시)
             let avgDisplay = r.avg > 0 ? `${r.avg}타` : `<span style="color:#a0aec0;">-</span>`;
 
             tr.innerHTML = `
