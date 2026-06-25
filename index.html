@@ -17,18 +17,18 @@
         .summary-box { margin-top: 15px; padding: 10px; background-color: #ebf8ff; border-radius: 8px; text-align: center; font-weight: bold; color: #2b6cb0; font-size: 14px; }
         .loading { text-align: center; color: #666; font-size: 14px; padding: 20px; }
         .sub-text { font-size: 11px; color: #666; font-weight: normal; }
-        .badge { display: inline-flex; justify-content: center; align-items: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 900; font-size: 14px; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); }
+        .award-text { font-size: 12px; line-height: 1.5; color: #1e40af; }
+        .badge { display: inline-flex; justify-content: center; align-items: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 900; font-size: 14px; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .badge-1 { background: linear-gradient(135deg, #FFD700, #FDB931); border: 2px solid #DAA520; width: 32px; height: 32px; font-size: 16px; }
         .badge-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); border: 2px solid #9E9E9E; }
         .badge-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); border: 2px solid #8B4513; }
         .badge-normal { background: #f1f5f9; color: #64748b; font-weight: bold; }
-        .prize-card { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde68a; }
-        .prize-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-bottom: 5px; font-size: 14px; }
+        .prize-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 8px; margin-bottom: 5px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="card prize-card" id="prizeSection" style="display: none;">
+    <div class="card" id="prizeSection" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0;">💰 최근 상금전 결과</h3>
             <select id="feeSelect" style="width: auto; padding: 5px; border-radius: 6px;" onchange="updateFee()">
@@ -40,15 +40,10 @@
     </div>
     <div class="card">
         <h2>🏆 어쩌다 스크린 골프 랭킹</h2>
-        <table id="rankingTable"><thead><tr><th>순위</th><th>이름</th><th>평균(핸디)</th><th>누적 수상</th></tr></thead><tbody></tbody></table>
-    </div>
-    <div class="card">
-        <h3>🔍 상세 기록</h3>
-        <select id="historyNameSelect" onchange="renderUserHistory()"><option value="">멤버 선택</option></select>
-        <div id="historyContent" style="display:none;"><div id="historySummary" class="summary-box"></div><table id="historyTable"><thead><tr><th>날짜</th><th>오버파</th><th>타수</th></tr></thead><tbody></tbody></table></div>
+        <div id="loadingMsg" class="loading">데이터 로딩 중...</div>
+        <table id="rankingTable" style="display: none;"><thead><tr><th>순위</th><th>이름</th><th>평균(핸디)</th><th>누적 수상</th></tr></thead><tbody></tbody></table>
     </div>
 </div>
-
 <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
     let records = [], globalStats = {}, selectedFee = 10000;
@@ -56,12 +51,15 @@
     async function fetchData() {
         const res = await fetch(CSV_URL);
         const text = await res.text();
-        const lines = text.split('\n');
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',');
-            if (cols.length < 3) continue;
-            // ★ 중요: 날짜(0), 이름(1), 타수(2) 순서대로 정확히 파싱
-            records.push({ date: cols[0].trim(), name: cols[1].trim(), totalScore: parseInt(cols[2]), overPar: parseInt(cols[2]) - 72, prizeJoin: '참여' });
+        const rows = text.split('\n').map(row => row.split(','));
+        const headers = rows[0].map(h => h.trim());
+        const nameIdx = headers.findIndex(h => h.includes('이름'));
+        const scoreIdx = headers.findIndex(h => h.includes('타수'));
+        const dateIdx = headers.findIndex(h => h.includes('날짜'));
+
+        for(let i=1; i<rows.length; i++) {
+            if(rows[i].length < 3) continue;
+            records.push({ date: rows[i][dateIdx]?.trim(), name: rows[i][nameIdx]?.trim(), totalScore: parseInt(rows[i][scoreIdx]), overPar: parseInt(rows[i][scoreIdx]) - 72, prizeJoin: '참여' });
         }
         processStats(); renderUI();
     }
@@ -83,30 +81,29 @@
     function updateFee() { selectedFee = parseInt(document.getElementById('feeSelect').value); renderUI(); }
 
     function renderUI() {
-        // 랭킹 테이블 렌더링
         const tbody = document.querySelector('#rankingTable tbody');
         tbody.innerHTML = Object.keys(globalStats).sort((a,b) => globalStats[a].avg - globalStats[b].avg).map((n, i) => 
-            `<tr><td>${i+1}</td><td>${n}</td><td>${globalStats[n].avg}타(${globalStats[n].handi})</td><td>-</td></tr>`).join('');
+            `<tr><td>${i+1}</td><td><strong>${n}</strong></td><td>${globalStats[n].avg}타(${globalStats[n].handi})</td><td>-</td></tr>`).join('');
         
-        // 상금전 렌더링
-        const latest = records.filter(r => r.date === records[records.length-1].date).sort((a,b) => a.totalScore - b.totalScore);
+        const latestDate = [...new Set(records.map(r => r.date))].pop();
+        const latest = records.filter(r => r.date === latestDate).sort((a,b) => a.totalScore - b.totalScore);
         const total = latest.length * selectedFee;
+        
         document.getElementById('prizeSection').style.display = 'block';
         document.getElementById('prizeWinners').innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px;">총 상금: ${total.toLocaleString()}원</div>` + 
-            latest.map((p, i) => `<div class="prize-item"><div>${i+1}등 ${p.name}</div><div>${i==0?Math.floor(total*0.5/5000)*5000:i==1?Math.floor(total*0.3/5000)*5000:i==2?Math.floor(total*0.2/5000)*5000:0}원</div></div>`).join('');
-        
-        // 드롭다운 업데이트
-        const select = document.getElementById('historyNameSelect');
-        Object.keys(globalStats).sort().forEach(n => select.add(new Option(n, n)));
+            latest.map((p, i) => `<div class="prize-item"><div>${i+1}등 ${p.name}</div><div>${calculateMoney(i, latest.length, selectedFee)}원</div></div>`).join('');
+        document.getElementById('loadingMsg').style.display = 'none';
+        document.getElementById('rankingTable').style.display = 'table';
     }
 
-    function renderUserHistory() {
-        const name = document.getElementById('historyNameSelect').value;
-        if(!name) return;
-        document.querySelector('#historyTable tbody').innerHTML = globalStats[name].history.map(r => `<tr><td>${r.date}</td><td>${r.overPar}</td><td>${r.totalScore}타</td></tr>`).join('');
-        document.getElementById('historyContent').style.display = 'block';
+    function calculateMoney(rank, count, fee) {
+        let total = count * fee;
+        if (count >= 6) return rank === 0 ? Math.floor(total * 0.5 / 5000) * 5000 : rank === 1 ? Math.floor(total * 0.3 / 5000) * 5000 : rank === 2 ? Math.floor(total * 0.2 / 5000) * 5000 : 0;
+        if (count === 5) return rank === 0 ? fee * 3 : rank === 1 ? fee * 2 : 0;
+        if (count === 4) return rank === 0 ? fee * 3 : rank === 1 ? fee * 1 : 0;
+        if (count === 3) return rank === 0 ? fee * 2 : rank === 1 ? fee * 1 : 0;
+        return rank === 0 ? total : 0;
     }
-
     fetchData();
 </script>
 </body>
