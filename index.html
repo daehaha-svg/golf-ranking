@@ -45,7 +45,7 @@
 
 <div class="container">
     <div class="card prize-card" id="prizeSection" style="display: none;">
-        <!-- ★ 옵션 선택기 추가 -->
+        <!-- ★ 옵션 선택기 -->
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0;">💰 최근 상금전 결과</h3>
             <select id="feeSelect" style="width: auto; padding: 5px; font-size: 12px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;" onchange="updateFee()">
@@ -147,7 +147,7 @@
         return `<span style="color:#111;">0</span>`;
     }
 
-    // ★ 상금 분배 로직 전면 개편 (단축왕 상금 폐지, 등수 편차 확실히)
+    // ★ 상금 분배 로직 (단축왕 상금 없음, 1/2/3등 편차 확실 보장)
     function calculatePrizes(numParticipants, fee = 5000) {
         let total = numParticipants * fee;
         let p1 = 0, p2 = 0, p3 = 0;
@@ -173,7 +173,7 @@
         } else if (numParticipants === 1) {
             p1 = total;
         }
-        return { p1, p2, p3, effort: 0, total }; // effort 상금 0원 처리
+        return { p1, p2, p3, total }; 
     }
 
     function updateFee() {
@@ -352,7 +352,7 @@
 
             dailyCandidates.sort((a, b) => b.diff - a.diff);
             
-            // 상금과 관계없이 가장 타수를 많이 줄인 사람이 단축왕
+            // 상금 양보 없음: 가장 타수를 많이 줄인 사람이 단축왕
             let effortWinnerName = dailyCandidates.length > 0 ? dailyCandidates[0].name : null;
             if (effortWinnerName) {
                 globalStats[effortWinnerName].improved += 1;
@@ -450,7 +450,7 @@
         });
         improvedCandidates.sort((a, b) => b.diff - a.diff);
 
-        // 상금 없이 명예 단축왕 선별
+        // 상금 없이 명예 단축왕 선별 (1등도 중복 수상 가능)
         let effortWinner = improvedCandidates.length > 0 ? improvedCandidates[0] : null;
 
         document.getElementById('prizeSection').style.display = 'block';
@@ -493,7 +493,7 @@
             `;
         }
 
-        // 단축왕 TOP 4 렌더링 (상금 양보 문구 삭제, 순수 명예로 표시)
+        // 단축왕 TOP 4 렌더링 (오직 명예로만 표시)
         const improvedDiv = document.getElementById('mostImproved');
         if (improvedCandidates.length > 0) {
             let listHtml = `<div style="font-size: 14px; font-weight: bold; color: #1e40af; margin-bottom: 8px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px;">🔥 이주의 단축 기록 (TOP 4)</div>`;
@@ -503,7 +503,7 @@
                 let rankNum = idx + 1;
                 let statusText = '';
                 
-                // 단축왕에게만 트로피 뱃지 부여
+                // 단축왕 1명에게만 트로피 뱃지 부여
                 if (effortWinner && c.name === effortWinner.name) {
                     statusText = `<span style="color:#e53e3e; font-weight:bold; font-size:12px; margin-left:5px;">[🏆 단축왕]</span>`;
                 }
