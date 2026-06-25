@@ -19,13 +19,7 @@
         .sub-text { font-size: 11px; color: #666; font-weight: normal; }
         .award-text { font-size: 12px; line-height: 1.5; color: #1e40af; }
         
-        .badge {
-            display: inline-flex; justify-content: center; align-items: center;
-            width: 28px; height: 28px; border-radius: 50%;
-            font-weight: 900; font-size: 14px; color: white;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
+        .badge { display: inline-flex; justify-content: center; align-items: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 900; font-size: 14px; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .badge-1 { background: linear-gradient(135deg, #FFD700, #FDB931); border: 2px solid #DAA520; width: 32px; height: 32px; font-size: 16px; }
         .badge-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); border: 2px solid #9E9E9E; }
         .badge-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); border: 2px solid #8B4513; }
@@ -37,7 +31,6 @@
         .prize-name { flex: 1; font-weight: bold; font-size: 16px; margin-left: 5px; }
         .prize-score { text-align: right; }
         .prize-net { color: #111; font-weight: bold; font-size: 17px; }
-        .prize-detail { color: #333; font-size: 12px; margin-top: 4px; line-height: 1.4; }
         .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
     </style>
 </head>
@@ -56,7 +49,6 @@
         </div>
         <div id="prizeDateStr" style="text-align: left; color: #92400e; font-size: 13px; margin-top: 5px; margin-bottom: 15px;"></div>
         <div id="prizeWinners"></div>
-        <div id="mostImproved" class="improved-box"></div>
     </div>
 
     <div class="card">
@@ -96,45 +88,51 @@
 
 <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
-    
-    // 설정값 유지
-    const MANUAL_AWARDS = { '박성준': { first: 1, second: 0, third: 0, improved: 0 }, '심덕보': { first: 0, second: 1, third: 0, improved: 0 }, '성주암': { first: 0, second: 0, third: 1, improved: 0 } };
+    const MANUAL_AWARDS = { '박성준': { first: 1, second: 0, third: 0 }, '심덕보': { first: 0, second: 1, third: 0 }, '성주암': { first: 0, second: 0, third: 1 } };
     const MANUAL_HANDICAPS = { '김현택': 2 };
 
     let records = [], globalStats = {}, selectedFee = 10000;
 
-    // 파싱 함수만 업그레이드
     function parseCSV(csvText) {
         const lines = csvText.split('\n');
         records = [];
         if (lines.length < 2) return;
-
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        // ★ 헤더 이름으로 정확한 인덱스 찾기
         const dateIdx = headers.findIndex(h => h.includes('날짜'));
         const nameIdx = headers.findIndex(h => h.includes('이름'));
         const scoreIdx = headers.findIndex(h => h.includes('타수'));
-        const prizeIdx = headers.findIndex(h => h.includes('상금전') || h.includes('참여여부') || h.includes('참가비'));
 
         for (let i = 1; i < lines.length; i++) {
             const cols = lines[i].split(',');
             if (cols.length <= Math.max(dateIdx, nameIdx, scoreIdx)) continue;
-            
             const name = cols[nameIdx]?.trim();
             const rawScore = parseInt(cols[scoreIdx]?.trim().replace(/[^0-9\-]/g, ''));
             const date = cols[dateIdx]?.trim();
-            
             if (name && !isNaN(rawScore)) {
-                let overPar = (rawScore < 50 && rawScore > -40) ? rawScore : rawScore - 72;
                 let totalScore = (rawScore < 50 && rawScore > -40) ? 72 + rawScore : rawScore;
-                
-                records.push({ date, name, totalScore, overPar, prizeJoin: '참여', fee: 5000 });
+                records.push({ date, name, totalScore });
             }
         }
         records.sort((a, b) => a.date.localeCompare(b.date));
     }
 
-    // 이하 기존 로직 그대로 유지
+    // ★ 수정된 상금 로직
+    function calculatePrizes(numParticipants, fee) {
+        let total = numParticipants * fee;
+        let p1 = 0, p2 = 0, p3 = 0;
+        
+        if (numParticipants >= 3) {
+            p3 = fee; // 3등: 참가비 고정
+            p1 = Math.floor((total * 0.5) / 5000) * 5000; // 1등: 전체의 50% (5천원 단위)
+            p2 = total - p1 - p3; // 2등: 나머지
+        } else if (numParticipants === 2) {
+            p1 = total * 0.7; p2 = total * 0.3;
+        } else {
+            p1 = total;
+        }
+        return { p1, p2, p3, total };
+    }
+
     function getRankBadge(index) {
         const rank = index + 1;
         if (rank === 1) return `<span class="badge badge-1">1</span>`;
@@ -143,33 +141,15 @@
         return `<span class="badge badge-normal">${rank}</span>`;
     }
 
-    function formatOverPar(score) {
-        if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
-        if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
-        return `<span style="color:#111;">E</span>`;
-    }
-
     function formatHandi(score) {
         if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
         if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
         return `<span style="color:#111;">0</span>`;
     }
 
-    function calculatePrizes(numParticipants, fee = 5000) {
-        let total = numParticipants * fee;
-        let p1 = 0, p2 = 0, p3 = 0;
-        if (numParticipants >= 6) { p3 = fee; p2 = fee * 2; p1 = total - p2 - p3; }
-        else if (numParticipants === 5) { p1 = fee * 3; p2 = fee * 2; }
-        else if (numParticipants === 4) { p1 = fee * 3; p2 = fee * 1; }
-        else if (numParticipants === 3) { p1 = fee * 2; p2 = fee * 1; }
-        else if (numParticipants === 2) { p1 = total; }
-        else if (numParticipants === 1) { p1 = total; }
-        return { p1, p2, p3, total };
-    }
-
     function updateFee() {
         selectedFee = parseInt(document.getElementById('feeSelect').value);
-        processStats(); renderPrizeMatch(); renderRanking(); updateNameDropdown();
+        processStats(); renderPrizeMatch(); renderRanking();
     }
 
     async function fetchData() {
@@ -180,18 +160,13 @@
             document.getElementById('loadingMsg').style.display = 'none';
             document.getElementById('rankingTable').style.display = 'table';
             processStats(); renderPrizeMatch(); renderRanking(); updateNameDropdown();
-        } catch (error) {
-            document.getElementById('loadingMsg').innerText = '데이터 로딩 실패';
-        }
+        } catch (error) { document.getElementById('loadingMsg').innerText = '데이터 로딩 실패'; }
     }
 
     function processStats() {
         globalStats = {};
         const players = [...new Set(records.map(r => r.name))];
-        players.forEach(name => {
-            globalStats[name] = { totalScore: 0, count: 0, history: [], first: 0, second: 0, third: 0, improved: 0 };
-        });
-
+        players.forEach(name => globalStats[name] = { totalScore: 0, count: 0, history: [], first: 0, second: 0, third: 0 });
         records.forEach(r => {
             if(globalStats[r.name]) {
                 globalStats[r.name].totalScore += r.totalScore;
@@ -199,7 +174,6 @@
                 globalStats[r.name].history.push(r);
             }
         });
-
         for (let name in globalStats) {
             const avg = Math.round(globalStats[name].totalScore / globalStats[name].count);
             globalStats[name].avg = avg;
@@ -217,12 +191,10 @@
         const dates = [...new Set(records.map(r => r.date))];
         const latestDate = dates[dates.length - 1];
         const latestRecords = records.filter(r => r.date === latestDate);
-        
         let prizes = calculatePrizes(latestRecords.length, selectedFee);
         
         document.getElementById('prizeSection').style.display = 'block';
         document.getElementById('prizeDateStr').innerText = `(${latestDate} 경기)`;
-        
         const winnersDiv = document.getElementById('prizeWinners');
         winnersDiv.innerHTML = `<div style="text-align:center; margin-bottom:12px; font-size:14px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">총 상금: ${prizes.total.toLocaleString()}원</div>`;
         
@@ -232,9 +204,7 @@
                 <div class="prize-item">
                     <div class="prize-rank">${getRankBadge(i)}</div>
                     <div class="prize-name">${p.name} ${money > 0 ? `<span style="color:#e53e3e;">💰${money.toLocaleString()}원</span>` : ''}</div>
-                    <div class="prize-score">
-                        <div class="prize-net">${p.totalScore}타</div>
-                    </div>
+                    <div class="prize-score"><div class="prize-net">${p.totalScore}타</div></div>
                 </div>
             `;
         });
@@ -245,9 +215,7 @@
         tbody.innerHTML = '';
         Object.keys(globalStats).sort((a,b) => globalStats[a].avg - globalStats[b].avg).forEach((name, index) => {
             const r = globalStats[name];
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${getRankBadge(index)}</td><td><strong>${name}</strong><br><span class="sub-text">${r.count}회</span></td><td>${r.avg}타<br><span style="font-size:12px; font-weight:bold;">(${formatHandi(r.handicap)})</span></td><td class="award-text">${r.first>0?`1등 ${r.first}회`:''}</td>`;
-            tbody.appendChild(tr);
+            tbody.innerHTML += `<tr><td>${getRankBadge(index)}</td><td><strong>${name}</strong><br><span class="sub-text">${r.count}회</span></td><td>${r.avg}타<br><span style="font-size:12px; font-weight:bold;">(${formatHandi(r.handicap)})</span></td><td class="award-text">${r.first>0?`1등 ${r.first}회`:''}</td></tr>`;
         });
     }
 
@@ -263,7 +231,7 @@
         const name = document.getElementById('historyNameSelect').value;
         if (!name) return;
         const tbody = document.querySelector('#historyTable tbody');
-        tbody.innerHTML = globalStats[name].history.map(r => `<tr><td>${r.date}</td><td>${formatOverPar(r.overPar)}</td><td>${r.totalScore}타</td></tr>`).join('');
+        tbody.innerHTML = globalStats[name].history.map(r => `<tr><td>${r.date}</td><td>${r.totalScore}타</td></tr>`).join('');
         document.getElementById('historyContent').style.display = 'block';
         document.getElementById('historySummary').innerHTML = `평균 <strong>${globalStats[name].avg}</strong>타 | 핸디 <strong>${formatHandi(globalStats[name].handicap)}</strong>`;
     }
