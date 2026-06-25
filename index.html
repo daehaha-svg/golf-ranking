@@ -45,8 +45,17 @@
 
 <div class="container">
     <div class="card prize-card" id="prizeSection" style="display: none;">
-        <h3>💰 최근 상금전 결과</h3>
-        <div id="prizeDateStr" style="text-align: center; color: #92400e; font-size: 13px; margin-top: -10px; margin-bottom: 15px;"></div>
+        <!-- ★ 옵션 선택기 추가 -->
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">💰 최근 상금전 결과</h3>
+            <select id="feeSelect" style="width: auto; padding: 5px; font-size: 12px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;" onchange="updateFee()">
+                <option value="5000">참가비 5천원</option>
+                <option value="10000">참가비 1만원</option>
+                <option value="15000">참가비 1.5만원</option>
+                <option value="20000">참가비 2만원</option>
+            </select>
+        </div>
+        <div id="prizeDateStr" style="text-align: left; color: #92400e; font-size: 13px; margin-top: 5px; margin-bottom: 15px;"></div>
         
         <div id="prizeWinners"></div>
         <div id="mostImproved" class="improved-box"></div>
@@ -116,6 +125,7 @@
 
     let records = [];
     let globalStats = {};
+    let selectedFee = null; // 사용자가 선택한 참가비 덮어쓰기 변수
 
     function getRankBadge(index) {
         const rank = index + 1;
@@ -137,28 +147,44 @@
         return `<span style="color:#111;">0</span>`;
     }
 
-    // ★ 인원수에 따른 분배 규칙 통합 함수 (버그 완벽 차단)
-    function calculatePrizes(numParticipants) {
-        let total = numParticipants * 5000;
-        let effort = numParticipants >= 2 ? 5000 : 0;
+    // ★ 참가비에 따른 상금 분배 로직 (동적 계산)
+    function calculatePrizes(numParticipants, fee = 5000) {
+        let total = numParticipants * fee;
+        let effort = numParticipants >= 2 ? fee : 0; // 단축왕은 참가비 1인분과 동일하게 설정
         let p1 = 0, p2 = 0, p3 = 0;
         let rem = total - effort;
         
         if (numParticipants >= 5) {
-            p3 = 5000; rem -= 5000;
-            p2 = 5000; rem -= 5000;
+            p3 = fee; rem -= fee;
+            p2 = fee; rem -= fee;
             p1 = rem;
         } else if (numParticipants === 4) {
-            p2 = 5000; rem -= 5000;
+            p2 = fee; rem -= fee;
             p1 = rem;
         } else if (numParticipants === 3) {
-            p1 = rem; // 10000 (2등은 0원)
+            // 60% 비율로 맞추되 5천원 단위로 내림 계산
+            let calc1st = Math.floor((total * 0.6) / 5000) * 5000;
+            if (calc1st > rem) calc1st = rem;
+            if (calc1st === 0 && rem > 0) calc1st = rem; 
+            p1 = calc1st;
+            p2 = rem - p1;
+            p3 = 0;
         } else if (numParticipants === 2) {
-            p1 = rem; // 5000
+            p1 = rem;
         } else if (numParticipants === 1) {
             p1 = total;
+            effort = 0;
         }
-        return { p1, p2, p3, effort };
+        return { p1, p2, p3, effort, total };
+    }
+
+    // 옵션 변경 시 재계산 함수
+    function updateFee() {
+        selectedFee = parseInt(document.getElementById('feeSelect').value);
+        processStats();
+        renderPrizeMatch();
+        renderRanking();
+        updateNameDropdown();
     }
 
     async function fetchData() {
@@ -211,10 +237,19 @@
                 let rawScore = parseInt(cols[scoreIdx].trim().replace(/[^0-9\-]/g, '')); 
                 
                 let prizeJoin = '참여';
+                let fee = 5000; // 기본 참가비
+
                 if (prizeIdx !== -1 && cols[prizeIdx]) {
                     let pVal = cols[prizeIdx].trim().toUpperCase();
-                    if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함') || pVal.includes('N')) {
+                    if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함') || pVal === 'N') {
                         prizeJoin = '미참여';
+                        fee = 0;
+                    } else {
+                        // 시트에 직접 10000 이라고 치면 자동 인식
+                        let parsedNum = parseInt(pVal.replace(/[^0-9]/g, ''));
+                        if (!isNaN(parsedNum) && parsedNum >= 1000) {
+                            fee = parsedNum;
+                        }
                     }
                 }
                 
@@ -236,7 +271,7 @@
                         }
                     }
 
-                    records.push({ date: cleanDate, name: name, totalScore: totalScore, overPar: overPar, prizeJoin: prizeJoin });
+                    records.push({ date: cleanDate, name: name, totalScore: totalScore, overPar: overPar, prizeJoin: prizeJoin, fee: fee });
                 }
             }
         }
@@ -258,6 +293,8 @@
         });
 
         const dates = [...new Set(records.map(r => r.date))];
+        const latestDate = dates.length > 0 ? dates[dates.length - 1] : null;
+
         let runningStats = {};
         players.forEach(name => {
             runningStats[name] = { totalScore: 0, count: 0, history: [] };
@@ -266,6 +303,15 @@
         dates.forEach(date => {
             const dailyRecords = records.filter(r => r.date === date);
             
+            // 옵션이 바뀌면 최신 경기의 참가비만 덮어씌움
+            let matchFee = 5000;
+            if (date === latestDate && selectedFee !== null) {
+                matchFee = selectedFee;
+            } else {
+                matchFee = dailyRecords.length > 0 ? Math.max(...dailyRecords.map(r => r.fee)) : 5000;
+                if (matchFee === 0 || isNaN(matchFee)) matchFee = 5000;
+            }
+
             const dailyResults = dailyRecords.map(r => {
                 let handi = 0;
                 if (runningStats[r.name].count > 0) {
@@ -283,8 +329,8 @@
                 return a.netScore - b.netScore;
             });
 
-            // 돈을 받는 진짜 상금권 파악
-            let prizes = calculatePrizes(dailyResults.length);
+            // 변경된 상금 비율로 수상권 적용
+            let prizes = calculatePrizes(dailyResults.length, matchFee);
             let dailyMainWinners = [];
             
             if (prizes.p1 > 0 && dailyResults.length > 0) {
@@ -300,7 +346,6 @@
                 globalStats[dailyResults[2].name].third += 1;
             }
 
-            // 단축왕 선별 (양보 로직 적용)
             let dailyCandidates = [];
             dailyRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
                 const hist = runningStats[r.name].history;
@@ -324,7 +369,7 @@
                 }
             }
 
-            // 단축왕이 아무도 없으면 2등에게 5천원 이월 -> 2등 타이틀 수여
+            // 단축왕 없고 상금이 남았을 때 2등에게 이월 기록
             if (prizes.effort > 0 && !effortWinnerName && dailyResults.length > 1) {
                 if (!dailyMainWinners.includes(dailyResults[1].name)) {
                     globalStats[dailyResults[1].name].second += 1;
@@ -378,7 +423,20 @@
         const latestRecords = records.filter(r => r.date === latestDate);
         if (latestRecords.length === 0) return;
 
-        // 상금전 랭킹 도출
+        let matchFee = 5000;
+        if (selectedFee !== null) {
+            matchFee = selectedFee;
+        } else {
+            matchFee = latestRecords.length > 0 ? Math.max(...latestRecords.map(r => r.fee)) : 5000;
+            if (matchFee === 0 || isNaN(matchFee)) matchFee = 5000;
+            
+            // 첫 진입 시 드롭다운 값 동기화
+            let feeDropdown = document.getElementById('feeSelect');
+            if (feeDropdown && [5000, 10000, 15000, 20000].includes(matchFee)) {
+                feeDropdown.value = matchFee;
+            }
+        }
+
         const prizeResults = latestRecords.map(r => {
             const userPast = pastRecords.filter(p => p.name === r.name);
             let handi = 0;
@@ -396,14 +454,13 @@
         });
 
         const numPrizeParticipants = prizeResults.length;
-        let prizes = calculatePrizes(numPrizeParticipants);
+        let prizes = calculatePrizes(numPrizeParticipants, matchFee);
 
         let mainWinnerNames = [];
         if (prizes.p1 > 0 && prizeResults.length > 0) mainWinnerNames.push(prizeResults[0].name);
         if (prizes.p2 > 0 && prizeResults.length > 1) mainWinnerNames.push(prizeResults[1].name);
         if (prizes.p3 > 0 && prizeResults.length > 2) mainWinnerNames.push(prizeResults[2].name);
 
-        // 단축왕 후보 도출
         let improvedCandidates = [];
         latestRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
             const history = globalStats[r.name].history;
@@ -418,7 +475,6 @@
         });
         improvedCandidates.sort((a, b) => b.diff - a.diff);
 
-        // 양보 로직 적용하여 최종 승자 찾기
         let effortWinner = null;
         for (let c of improvedCandidates) {
             if (!mainWinnerNames.includes(c.name)) {
@@ -427,11 +483,12 @@
             }
         }
 
-        // 단축왕 5천원 이월 여부
         let effortPrizeMessage = "";
         if (prizes.effort > 0 && !effortWinner && prizeResults.length > 1) {
             prizes.p2 += prizes.effort;
-            effortPrizeMessage = `<div style="margin-top:8px; font-size:12px; color:#e53e3e; font-weight:bold; background:#fef2f2; padding:6px; border-radius:6px; text-align:center;">💡 단축왕 대상자가 없어 5,000원이 2등 상금에 합산되었습니다!</div>`;
+            effortPrizeMessage = `<div style="margin-top:8px; font-size:12px; color:#e53e3e; font-weight:bold; background:#fef2f2; padding:6px; border-radius:6px; text-align:center;">💡 단축왕 대상자가 없어 ${prizes.effort.toLocaleString()}원이 2등 상금에 합산되었습니다!</div>`;
+        } else if (numPrizeParticipants === 1 && !effortWinner) {
+            prizes.p1 += prizes.effort;
         }
 
         document.getElementById('prizeSection').style.display = 'block';
@@ -440,10 +497,9 @@
         const winnersDiv = document.getElementById('prizeWinners');
         winnersDiv.innerHTML = '';
         
-        const totalPrize = numPrizeParticipants * 5000;
         if (numPrizeParticipants > 0) {
             winnersDiv.innerHTML = `<div style="text-align:center; margin-bottom:12px; font-size:14px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">
-                상금전 참가: ${numPrizeParticipants}명 / 총 상금: ${totalPrize.toLocaleString()}원
+                상금전 참가: ${numPrizeParticipants}명 / 총 상금: ${prizes.total.toLocaleString()}원
             </div>`;
         } else {
             winnersDiv.innerHTML = `<div style="text-align:center; padding:10px; color:#6b7280;">이번 경기는 상금전 참여자가 없습니다.</div>`;
@@ -451,7 +507,6 @@
 
         for (let i = 0; i < prizeResults.length; i++) {
             const p = prizeResults[i];
-            
             let overParHtml = formatOverPar(p.overPar);
             let netOverParHtml = formatOverPar(p.netScore - 72);
             let handiHtml = formatHandi(p.handi); 
@@ -476,7 +531,6 @@
             `;
         }
 
-        // 단축왕 TOP 4 렌더링
         const improvedDiv = document.getElementById('mostImproved');
         if (improvedCandidates.length > 0) {
             let listHtml = `<div style="font-size: 14px; font-weight: bold; color: #1e40af; margin-bottom: 8px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px;">🔥 이주의 단축 기록 (TOP 4)</div>`;
@@ -487,7 +541,7 @@
                 let statusText = '';
                 
                 if (effortWinner && c.name === effortWinner.name) {
-                    statusText = `<span style="color:#e53e3e; font-weight:bold; font-size:12px; margin-left:5px;">[상금 💰5,000원]</span>`;
+                    statusText = `<span style="color:#e53e3e; font-weight:bold; font-size:12px; margin-left:5px;">[상금 💰${prizes.effort.toLocaleString()}원]</span>`;
                 } else if (mainWinnerNames.includes(c.name)) {
                     statusText = `<span style="color:#718096; font-size:12px; margin-left:5px;">[상금권 양보]</span>`;
                 }
