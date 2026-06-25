@@ -147,35 +147,33 @@
         return `<span style="color:#111;">0</span>`;
     }
 
-    // ★ 상금 분배 로직 (단축왕 상금 없음, 1/2/3등 편차 확실 보장)
-    function calculatePrizes(numParticipants, fee = 5000) {
-        let total = numParticipants * fee;
-        let p1 = 0, p2 = 0, p3 = 0;
-        
-        if (numParticipants >= 6) {
-            p3 = fee; 
-            p2 = fee * 2; 
-            p1 = total - p2 - p3;
-        } else if (numParticipants === 5) {
-            p1 = fee * 3;
-            p2 = fee * 2;
-            p3 = 0;
-        } else if (numParticipants === 4) {
-            p1 = fee * 3;
-            p2 = fee * 1;
-            p3 = 0;
-        } else if (numParticipants === 3) {
-            p1 = fee * 2;
-            p2 = fee * 1;
-            p3 = 0;
-        } else if (numParticipants === 2) {
-            p1 = total;
-        } else if (numParticipants === 1) {
-            p1 = total;
-        }
-        return { p1, p2, p3, total }; 
+// ★ 상금 분배 로직: 1등 50% 수준 + 5,000원 단위 절사
+function calculatePrizes(numParticipants, fee = 5000) {
+    let total = numParticipants * fee;
+    let p1 = 0, p2 = 0, p3 = 0;
+
+    // 1등: 전체 상금의 50%를 계산 후 5,000원 단위로 절사
+    p1 = Math.floor((total * 0.5) / 5000) * 5000;
+
+    // 2등과 3등을 위한 남은 금액
+    let remaining = total - p1;
+
+    if (numParticipants >= 3) {
+        // 남은 금액을 2등과 3등에게 분배 (2등을 3등보다 높게 설정)
+        // 2등에게 남은 금액의 약 60%를 주고 5,000원 단위로 절사
+        let p23_total = Math.floor(remaining / 5000) * 5000;
+        p2 = Math.floor((p23_total * 0.6) / 5000) * 5000;
+        p3 = p23_total - p2;
+    } else if (numParticipants === 2) {
+        // 2명일 때는 1등 몰빵 (취향에 따라 5:5로 바꾸셔도 됩니다)
+        p1 = total;
+    } else {
+        // 1명일 때는 1등 몰빵
+        p1 = total;
     }
 
+    return { p1, p2, p3, total }; 
+}
     function updateFee() {
         selectedFee = parseInt(document.getElementById('feeSelect').value);
         processStats();
