@@ -5,235 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>어쩌다 스크린 골프 모임</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f8; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 500px; margin: 0 auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2, h3 { margin-top: 0; color: #1a365d; text-align: center; }
-        .form-group { margin-bottom: 15px; }
-        select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 12px 5px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
-        th { background-color: #f8fafc; font-weight: bold; color: #4a5568; font-size: 13px; }
-        .summary-box { margin-top: 15px; padding: 10px; background-color: #ebf8ff; border-radius: 8px; text-align: center; font-weight: bold; color: #2b6cb0; font-size: 14px; }
-        .loading { text-align: center; color: #666; font-size: 14px; padding: 20px; }
-        .sub-text { font-size: 11px; color: #666; font-weight: normal; }
-        .award-text { font-size: 12px; line-height: 1.5; color: #1e40af; }
-        
-        .badge { display: inline-flex; justify-content: center; align-items: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 900; font-size: 14px; color: white; text-shadow: 1px 1px 1px rgba(0,0,0,0.3); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .badge-1 { background: linear-gradient(135deg, #FFD700, #FDB931); border: 2px solid #DAA520; width: 32px; height: 32px; font-size: 16px; }
-        .badge-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); border: 2px solid #9E9E9E; }
-        .badge-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); border: 2px solid #8B4513; }
-        .badge-normal { background: #f1f5f9; color: #64748b; font-weight: bold; border: none; text-shadow: none; box-shadow: none; font-size: 13px; }
-
-        .prize-card { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde68a; }
-        .prize-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px; background: white; border-radius: 8px; margin-bottom: 8px; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .prize-rank { width: 45px; text-align: center; }
-        .prize-name { flex: 1; font-weight: bold; font-size: 16px; margin-left: 5px; }
-        .prize-score { text-align: right; }
-        .prize-net { color: #111; font-weight: bold; font-size: 17px; }
-        .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
+        th, td { padding: 10px 5px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background-color: #f8fafc; font-weight: bold; color: #4a5568; }
+        .prize-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="card prize-card" id="prizeSection" style="display: none;">
+    <div class="card" id="prizeSection" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">💰 최근 상금전 결과</h3>
-            <select id="feeSelect" style="width: auto; padding: 5px; font-size: 12px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;" onchange="updateFee()">
-                <option value="5000">참가비 5천원</option>
-                <option value="10000" selected>참가비 1만원</option>
-                <option value="15000">참가비 1.5만원</option>
-                <option value="20000">참가비 2만원</option>
+            <h3 style="margin: 0;">💰 상금전 결과</h3>
+            <select id="feeSelect" onchange="renderUI()">
+                <option value="5000">5천원</option>
+                <option value="10000" selected>1만원</option>
             </select>
         </div>
-        <div id="prizeDateStr" style="text-align: left; color: #92400e; font-size: 13px; margin-top: 5px; margin-bottom: 15px;"></div>
-        <div id="prizeWinners"></div>
+        <div id="prizeWinners" style="margin-top:10px;"></div>
     </div>
 
     <div class="card">
-        <h2>🏆 어쩌다 스크린 골프 랭킹</h2>
-        <div id="loadingMsg" class="loading">최신 데이터를 불러오는 중입니다...</div>
-        <table id="rankingTable" style="display: none;">
-            <thead>
-                <tr>
-                    <th style="width: 15%">순위</th>
-                    <th style="width: 25%">이름<br><span class="sub-text">(참여)</span></th>
-                    <th style="width: 25%">평균<br><span class="sub-text">(핸디)</span></th>
-                    <th style="width: 35%">누적 수상</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-
-    <div class="card">
-        <h3>🔍 개인별 상세 기록</h3>
-        <div class="form-group">
-            <select id="historyNameSelect" onchange="renderUserHistory()">
-                <option value="">기록을 볼 멤버를 선택하세요</option>
-            </select>
-        </div>
-        <div id="historyContent" style="display: none;">
-            <div id="historySummary" class="summary-box"></div>
-            <table id="historyTable">
-                <thead>
-                    <tr><th>날짜</th><th>오버파</th><th>타수</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+        <h2>🏆 스크린 골프 랭킹</h2>
+        <table id="rankingTable"><thead><tr><th>순위</th><th>이름</th><th>평균타수</th></tr></thead><tbody></tbody></table>
     </div>
 </div>
 
 <script>
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
-    const MANUAL_AWARDS = { '박성준': { first: 1, second: 0, third: 0 }, '심덕보': { first: 0, second: 1, third: 0 }, '성주암': { first: 0, second: 0, third: 1 } };
-    const MANUAL_HANDICAPS = { '김현택': 2 };
-
-    let records = [], globalStats = {}, selectedFee = 10000;
-
-    function parseCSV(csvText) {
-        const lines = csvText.split('\n');
-        records = [];
-        if (lines.length < 2) return;
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        const dateIdx = headers.findIndex(h => h.includes('날짜'));
-        const nameIdx = headers.findIndex(h => h.includes('이름'));
-        const scoreIdx = headers.findIndex(h => h.includes('타수'));
-
-        for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',');
-            if (cols.length <= Math.max(dateIdx, nameIdx, scoreIdx)) continue;
-            const name = cols[nameIdx]?.trim();
-            const rawScore = parseInt(cols[scoreIdx]?.trim().replace(/[^0-9\-]/g, ''));
-            const date = cols[dateIdx]?.trim();
-            if (name && !isNaN(rawScore)) {
-                let totalScore = (rawScore < 50 && rawScore > -40) ? 72 + rawScore : rawScore;
-                records.push({ date, name, totalScore });
-            }
-        }
-        records.sort((a, b) => a.date.localeCompare(b.date));
-    }
-
-    // ★ 수정된 상금 로직
-    function calculatePrizes(numParticipants, fee) {
-        let total = numParticipants * fee;
-        let p1 = 0, p2 = 0, p3 = 0;
-        
-        if (numParticipants >= 3) {
-            p3 = fee; // 3등: 참가비 고정
-            p1 = Math.floor((total * 0.5) / 5000) * 5000; // 1등: 전체의 50% (5천원 단위)
-            p2 = total - p1 - p3; // 2등: 나머지
-        } else if (numParticipants === 2) {
-            p1 = total * 0.7; p2 = total * 0.3;
-        } else {
-            p1 = total;
-        }
-        return { p1, p2, p3, total };
-    }
-
-    function getRankBadge(index) {
-        const rank = index + 1;
-        if (rank === 1) return `<span class="badge badge-1">1</span>`;
-        if (rank === 2) return `<span class="badge badge-2">2</span>`;
-        if (rank === 3) return `<span class="badge badge-3">3</span>`;
-        return `<span class="badge badge-normal">${rank}</span>`;
-    }
-
-    function formatHandi(score) {
-        if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
-        if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
-        return `<span style="color:#111;">0</span>`;
-    }
-
-    function updateFee() {
-        selectedFee = parseInt(document.getElementById('feeSelect').value);
-        processStats(); renderPrizeMatch(); renderRanking();
-    }
+    let records = [];
+    let globalStats = {};
 
     async function fetchData() {
         try {
-            const response = await fetch(CSV_URL);
-            const csvText = await response.text();
-            parseCSV(csvText);
-            document.getElementById('loadingMsg').style.display = 'none';
-            document.getElementById('rankingTable').style.display = 'table';
-            processStats(); renderPrizeMatch(); renderRanking(); updateNameDropdown();
-        } catch (error) { document.getElementById('loadingMsg').innerText = '데이터 로딩 실패'; }
+            const res = await fetch(CSV_URL);
+            const text = await res.text();
+            const rows = text.split('\n');
+            const headers = rows[0].split(',').map(h => h.trim());
+            
+            // ★ 헤더 인덱스 찾기 (실수 방지를 위해 철저히 체크)
+            const nIdx = headers.findIndex(h => h.includes('이름'));
+            const sIdx = headers.findIndex(h => h.includes('타수'));
+            const dIdx = headers.findIndex(h => h.includes('날짜'));
+
+            records = [];
+            for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i].split(',');
+                if (cols.length < 3) continue;
+                
+                const name = cols[nIdx]?.trim();
+                const score = parseInt(cols[sIdx]?.trim());
+                const date = cols[dIdx]?.trim();
+                
+                if (name && !isNaN(score)) {
+                    records.push({ date, name, score });
+                }
+            }
+            processStats();
+            renderUI();
+        } catch (e) { alert("데이터 로딩 오류: " + e.message); }
     }
 
     function processStats() {
         globalStats = {};
-        const players = [...new Set(records.map(r => r.name))];
-        players.forEach(name => globalStats[name] = { totalScore: 0, count: 0, history: [], first: 0, second: 0, third: 0 });
         records.forEach(r => {
-            if(globalStats[r.name]) {
-                globalStats[r.name].totalScore += r.totalScore;
-                globalStats[r.name].count += 1;
-                globalStats[r.name].history.push(r);
-            }
+            if (!globalStats[r.name]) globalStats[r.name] = { total: 0, count: 0 };
+            globalStats[r.name].total += r.score;
+            globalStats[r.name].count += 1;
         });
-        for (let name in globalStats) {
-            const avg = Math.round(globalStats[name].totalScore / globalStats[name].count);
-            globalStats[name].avg = avg;
-            globalStats[name].handicap = Math.round((avg - 72) * 0.7);
-            if(MANUAL_AWARDS[name]) {
-                globalStats[name].first += MANUAL_AWARDS[name].first;
-                globalStats[name].second += MANUAL_AWARDS[name].second;
-                globalStats[name].third += MANUAL_AWARDS[name].third;
-            }
-        }
     }
 
-    function renderPrizeMatch() {
-        if (records.length === 0) return;
-        const dates = [...new Set(records.map(r => r.date))];
-        const latestDate = dates[dates.length - 1];
-        const latestRecords = records.filter(r => r.date === latestDate);
-        let prizes = calculatePrizes(latestRecords.length, selectedFee);
+    function renderUI() {
+        const fee = parseInt(document.getElementById('feeSelect').value);
+        
+        // 랭킹 렌더링
+        const tbody = document.querySelector('#rankingTable tbody');
+        tbody.innerHTML = Object.keys(globalStats)
+            .sort((a,b) => (globalStats[a].total/globalStats[a].count) - (globalStats[b].total/globalStats[b].count))
+            .map((n, i) => `<tr><td>${i+1}등</td><td>${n}</td><td>${Math.round(globalStats[n].total/globalStats[n].count)}타</td></tr>`).join('');
+        
+        // 상금 계산
+        const latestDate = [...new Set(records.map(r => r.date))].pop();
+        const latest = records.filter(r => r.date === latestDate).sort((a,b) => a.score - b.score);
+        const total = latest.length * fee;
         
         document.getElementById('prizeSection').style.display = 'block';
-        document.getElementById('prizeDateStr').innerText = `(${latestDate} 경기)`;
-        const winnersDiv = document.getElementById('prizeWinners');
-        winnersDiv.innerHTML = `<div style="text-align:center; margin-bottom:12px; font-size:14px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">총 상금: ${prizes.total.toLocaleString()}원</div>`;
+        document.getElementById('prizeWinners').innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px;">참가자 ${latest.length}명 / 총 상금: ${total.toLocaleString()}원</div>` + 
+            latest.map((p, i) => {
+                let money = calculatePrize(i, latest.length, fee);
+                return `<div class="prize-item"><div>${i+1}등 ${p.name}</div><div>${money.toLocaleString()}원</div></div>`;
+            }).join('');
+    }
+
+    function calculatePrize(rank, count, fee) {
+        // 3등은 무조건 참가비
+        if (rank === 2 && count >= 3) return fee;
         
-        latestRecords.sort((a,b) => a.totalScore - b.totalScore).forEach((p, i) => {
-            let money = (i===0) ? prizes.p1 : (i===1) ? prizes.p2 : (i===2) ? prizes.p3 : 0;
-            winnersDiv.innerHTML += `
-                <div class="prize-item">
-                    <div class="prize-rank">${getRankBadge(i)}</div>
-                    <div class="prize-name">${p.name} ${money > 0 ? `<span style="color:#e53e3e;">💰${money.toLocaleString()}원</span>` : ''}</div>
-                    <div class="prize-score"><div class="prize-net">${p.totalScore}타</div></div>
-                </div>
-            `;
-        });
-    }
-
-    function renderRanking() {
-        const tbody = document.querySelector('#rankingTable tbody');
-        tbody.innerHTML = '';
-        Object.keys(globalStats).sort((a,b) => globalStats[a].avg - globalStats[b].avg).forEach((name, index) => {
-            const r = globalStats[name];
-            tbody.innerHTML += `<tr><td>${getRankBadge(index)}</td><td><strong>${name}</strong><br><span class="sub-text">${r.count}회</span></td><td>${r.avg}타<br><span style="font-size:12px; font-weight:bold;">(${formatHandi(r.handicap)})</span></td><td class="award-text">${r.first>0?`1등 ${r.first}회`:''}</td></tr>`;
-        });
-    }
-
-    function updateNameDropdown() {
-        const select = document.getElementById('historyNameSelect');
-        Object.keys(globalStats).forEach(name => {
-            const option = document.createElement('option');
-            option.value = name; option.text = name; select.add(option);
-        });
-    }
-
-    function renderUserHistory() {
-        const name = document.getElementById('historyNameSelect').value;
-        if (!name) return;
-        const tbody = document.querySelector('#historyTable tbody');
-        tbody.innerHTML = globalStats[name].history.map(r => `<tr><td>${r.date}</td><td>${r.totalScore}타</td></tr>`).join('');
-        document.getElementById('historyContent').style.display = 'block';
-        document.getElementById('historySummary').innerHTML = `평균 <strong>${globalStats[name].avg}</strong>타 | 핸디 <strong>${formatHandi(globalStats[name].handicap)}</strong>`;
+        // 1등 50% 수준, 2등 나머지 (나머지 인원 제외)
+        if (rank === 0) return Math.floor((count * fee * 0.5) / 5000) * 5000;
+        if (rank === 1) return Math.floor((count * fee * 0.3) / 5000) * 5000;
+        return 0;
     }
 
     fetchData();
