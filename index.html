@@ -44,11 +44,19 @@
         .player-checkbox.selected { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
         .btn-action { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.2); }
         .btn-action:active { background: #1d4ed8; }
+        
         .team-board { display: flex; gap: 10px; margin-top: 15px; }
         .team-col { flex: 1; background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; }
         .team-title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #cbd5e1; }
         .team-a-title { color: #dc2626; border-color: #fca5a5; }
         .team-b-title { color: #2563eb; border-color: #93c5fd; }
+        
+        /* 팀 편성 태그 (수동 이동용) */
+        .player-tag { display: block; padding: 10px; margin: 6px 0; background: white; border-radius: 6px; text-align: center; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); user-select: none; }
+        .player-tag:active { transform: scale(0.96); background: #f1f5f9; }
+        .player-tag.team-a { border-left: 4px solid #ef4444; color: #991b1b; }
+        .player-tag.team-b { border-left: 4px solid #3b82f6; color: #1e3a8a; }
+
         .match-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
         .match-input { width: 50px; padding: 6px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; }
         .vs-badge { background: #475569; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
@@ -66,7 +74,7 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- [탭 1] 랭킹 & 상금전 (기존 영역) -->
+    <!-- [탭 1] 랭킹 & 상금전 -->
     <!-- ========================================== -->
     <div id="viewMain">
         <div class="card prize-card" id="prizeSection" style="display: none;">
@@ -128,29 +136,53 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- [탭 2] 2팀 대항전 (신규 영역) -->
+    <!-- [탭 2] 2팀 대항전 -->
     <!-- ========================================== -->
     <div id="viewTeam" style="display: none;">
         <div class="card">
             <h3>⚔️ 2팀 대항전 (스트로크 매치)</h3>
             
+            <!-- Step 1: 참가자 선택 -->
             <div id="step1_select">
                 <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자를 선택하세요 (최소 2명)</p>
                 <div id="teamPlayerSelect" style="margin-bottom: 15px;"></div>
-                <button class="btn-action" onclick="generateTeams()">팀 밸런스 자동 편성</button>
+                <button class="btn-action" onclick="generateTeams()">팀 자동 편성 및 수정하기</button>
             </div>
 
+            <!-- Step 1.5: 팀 수동 밸런싱 UI -->
+            <div id="step1_5_builder" style="display: none;">
+                <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between;">
+                    <span>2. 팀 편성 (이름을 터치하여 팀 변경)</span>
+                    <button onclick="resetTeamSetup()" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">인원 다시선택</button>
+                </p>
+                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* 최초에는 핸디캡 기반 최적의 조합으로 추천됩니다.<br>* 멤버 이름을 누르면 반대 팀으로 이동합니다.</p>
+                
+                <div class="team-board">
+                    <div class="team-col">
+                        <div class="team-title team-a-title">🔴 팀 A<br><span id="builderA_handi" style="font-size:11px; font-weight:normal;"></span></div>
+                        <div id="builderA_list" style="min-height: 120px; background: #e2e8f0; padding: 6px; border-radius: 6px;"></div>
+                    </div>
+                    
+                    <div class="team-col">
+                        <div class="team-title team-b-title">🔵 팀 B<br><span id="builderB_handi" style="font-size:11px; font-weight:normal;"></span></div>
+                        <div id="builderB_list" style="min-height: 120px; background: #e2e8f0; padding: 6px; border-radius: 6px;"></div>
+                    </div>
+                </div>
+
+                <button class="btn-action" onclick="confirmTeams()" style="background-color: #4f46e5; margin-top: 15px; box-shadow: 0 4px 6px rgba(79,70,229,0.2);">이대로 확정하고 스코어 입력</button>
+            </div>
+
+            <!-- Step 2: 스코어 입력 -->
             <div id="step2_match" style="display: none;">
                 <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between;">
-                    <span>2. 각 팀 스코어 입력</span>
-                    <button onclick="resetTeamSetup()" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">인원 다시선택</button>
+                    <span>3. 각 팀 최종 타수 입력</span>
+                    <button onclick="document.getElementById('step2_match').style.display='none'; document.getElementById('step1_5_builder').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 다시짜기</button>
                 </p>
                 <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* 핸디캡 합산 차이가 최소화 되도록 배정되었습니다.</p>
                 
                 <div class="team-board">
-                    <!-- Team A -->
                     <div class="team-col">
-                        <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; color:#64748b; font-weight:normal;"></span></div>
+                        <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
                         <div id="teamA_list"></div>
                     </div>
                     
@@ -158,9 +190,8 @@
                         <span class="vs-badge">VS</span>
                     </div>
 
-                    <!-- Team B -->
                     <div class="team-col">
-                        <div class="team-title team-b-title">🔵 팀 B<br><span id="teamB_handiSum" style="font-size:11px; color:#64748b; font-weight:normal;"></span></div>
+                        <div class="team-title team-b-title">🔵 팀 B<br><span id="teamB_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
                         <div id="teamB_list"></div>
                     </div>
                 </div>
@@ -173,6 +204,7 @@
                 <button class="btn-action" onclick="calculateTeamMatch()" style="background-color: #059669; box-shadow: 0 4px 6px rgba(5,150,105,0.2);">결과 발표 보기</button>
             </div>
 
+            <!-- Step 3: 결과 화면 -->
             <div id="step3_result" style="display: none;">
                 <div class="result-box" id="teamResultContent"></div>
                 
@@ -188,7 +220,7 @@
 
 <script>
     // =====================================================================
-    // ★ [1] 구글 시트 웹게시 링크 및 수동 설정
+    // ★ [1] 구글 시트 링크 및 기존 설정 유지
     // =====================================================================
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
 
@@ -206,7 +238,7 @@
     let records = [];
     let globalStats = {};
     let selectedFee = null; 
-    let teamMatchData = { teamA: [], teamB: [] }; // 팀전 임시 데이터 저장
+    let teamMatchData = { teamA: [], teamB: [] }; // 팀 데이터 저장소
 
     // ---------------------------------------------------------------------
     // 탭 전환 로직
@@ -250,7 +282,6 @@
         return `<span style="color:#111;">0</span>`;
     }
 
-    // 상금 분배 로직 (기존 유지)
     function calculatePrizes(numParticipants, fee = 5000) {
         let total = numParticipants * fee;
         let p1 = 0, p2 = 0, p3 = 0;
@@ -298,7 +329,6 @@
             renderRanking();
             updateNameDropdown();
             
-            // 오늘 날짜로 팀 매치 날짜 초기화
             const today = new Date();
             document.getElementById('teamMatchDate').value = today.toISOString().split('T')[0];
         } catch (error) {
@@ -461,7 +491,6 @@
     }
 
     function renderPrizeMatch() {
-        // 기존 렌더링 로직 (생략 없이 동일하게 유지)
         if (records.length === 0) return;
         const pastRecords = records.filter(r => r.date < records[records.length - 1].date);
         const dates = [...new Set(records.map(r => r.date))];
@@ -610,10 +639,12 @@
 
     function resetTeamSetup() {
         document.getElementById('step1_select').style.display = 'block';
+        document.getElementById('step1_5_builder').style.display = 'none';
         document.getElementById('step2_match').style.display = 'none';
         document.getElementById('step3_result').style.display = 'none';
     }
 
+    // [Step 1] 자동 팀 밸런스 조합 찾기
     function generateTeams() {
         const selectedEls = document.querySelectorAll('.player-checkbox.selected');
         if (selectedEls.length < 2) {
@@ -627,7 +658,6 @@
             players.push({ name: name, handi: globalStats[name].handicap });
         });
 
-        // 1. 조합 찾기 (핸디캡 합산 차이 최소화 알고리즘)
         let bestDiff = Infinity;
         let bestA = [], bestB = [];
         const n = players.length;
@@ -652,35 +682,87 @@
         }
         combine(0, [], []);
 
-        // 2. 각 팀 내에서 1대1 매칭을 위해 실력순(핸디캡 오름차순) 정렬
-        bestA.sort((a, b) => a.handi - b.handi);
-        bestB.sort((a, b) => a.handi - b.handi);
-
         teamMatchData.teamA = bestA;
         teamMatchData.teamB = bestB;
 
-        // UI 렌더링
         document.getElementById('step1_select').style.display = 'none';
         document.getElementById('step3_result').style.display = 'none';
+        document.getElementById('step1_5_builder').style.display = 'block';
+
+        renderTeamBuilder();
+    }
+
+    // [Step 1.5] 수동 밸런싱 화면 그리기
+    function renderTeamBuilder() {
+        const sumA = teamMatchData.teamA.reduce((s, p) => s + p.handi, 0);
+        const sumB = teamMatchData.teamB.reduce((s, p) => s + p.handi, 0);
+        
+        // ★ innerText를 innerHTML로 변경하여 HTML 태그가 정상적으로 랜더링되도록 수정
+        document.getElementById('builderA_handi').innerHTML = `핸디 합: ${formatHandi(sumA)}`;
+        document.getElementById('builderB_handi').innerHTML = `핸디 합: ${formatHandi(sumB)}`;
+        
+        const listA = document.getElementById('builderA_list');
+        const listB = document.getElementById('builderB_list');
+        
+        listA.innerHTML = '';
+        teamMatchData.teamA.forEach(p => {
+            listA.innerHTML += `<div class="player-tag team-a" onclick="togglePlayerTeam('${p.name}')">${p.name} <span style="font-size:11px; font-weight:normal;">(${formatHandi(p.handi)})</span></div>`;
+        });
+        
+        listB.innerHTML = '';
+        teamMatchData.teamB.forEach(p => {
+            listB.innerHTML += `<div class="player-tag team-b" onclick="togglePlayerTeam('${p.name}')">${p.name} <span style="font-size:11px; font-weight:normal;">(${formatHandi(p.handi)})</span></div>`;
+        });
+    }
+
+    // [Step 1.5 로직] 클릭 시 상대 팀으로 이동
+    function togglePlayerTeam(playerName) {
+        const idxA = teamMatchData.teamA.findIndex(p => p.name === playerName);
+        if (idxA !== -1) {
+            const p = teamMatchData.teamA.splice(idxA, 1)[0];
+            teamMatchData.teamB.push(p);
+        } else {
+            const idxB = teamMatchData.teamB.findIndex(p => p.name === playerName);
+            if (idxB !== -1) {
+                const p = teamMatchData.teamB.splice(idxB, 1)[0];
+                teamMatchData.teamA.push(p);
+            }
+        }
+        renderTeamBuilder();
+    }
+
+    // [Step 2] 팀 구성 완료 및 스코어 입력창 진입
+    function confirmTeams() {
+        if(teamMatchData.teamA.length === 0 || teamMatchData.teamB.length === 0) {
+            alert('각 팀에 최소 1명 이상의 참가자가 있어야 합니다.');
+            return;
+        }
+
+        // 1대1 매칭을 위해 각 팀 내에서 실력순(핸디캡 오름차순) 정렬
+        teamMatchData.teamA.sort((a, b) => a.handi - b.handi);
+        teamMatchData.teamB.sort((a, b) => a.handi - b.handi);
+
+        document.getElementById('step1_5_builder').style.display = 'none';
         document.getElementById('step2_match').style.display = 'block';
 
-        const sumA = bestA.reduce((sum, p) => sum + p.handi, 0);
-        const sumB = bestB.reduce((sum, p) => sum + p.handi, 0);
-        document.getElementById('teamA_handiSum').innerText = `핸디 합: ${formatHandi(sumA)}`;
-        document.getElementById('teamB_handiSum').innerText = `핸디 합: ${formatHandi(sumB)}`;
+        const sumA = teamMatchData.teamA.reduce((sum, p) => sum + p.handi, 0);
+        const sumB = teamMatchData.teamB.reduce((sum, p) => sum + p.handi, 0);
+        
+        // ★ innerText를 innerHTML로 변경하여 HTML 태그가 정상적으로 랜더링되도록 수정
+        document.getElementById('teamA_handiSum').innerHTML = `핸디 합: ${formatHandi(sumA)}`;
+        document.getElementById('teamB_handiSum').innerHTML = `핸디 합: ${formatHandi(sumB)}`;
 
         const listA = document.getElementById('teamA_list');
         const listB = document.getElementById('teamB_list');
         listA.innerHTML = '';
         listB.innerHTML = '';
 
-        const maxRows = Math.max(bestA.length, bestB.length);
+        const maxRows = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
         for (let i = 0; i < maxRows; i++) {
-            // Team A Row
-            if (bestA[i]) {
+            if (teamMatchData.teamA[i]) {
                 listA.innerHTML += `
                     <div class="match-row">
-                        <span style="width:50px; font-weight:bold;">${bestA[i].name}</span>
+                        <span style="width:50px; font-weight:bold;">${teamMatchData.teamA[i].name}</span>
                         <input type="number" id="input_A_${i}" class="match-input" placeholder="타수" pattern="\\d*">
                     </div>
                 `;
@@ -688,12 +770,11 @@
                 listA.innerHTML += `<div class="match-row" style="height:32px;"></div>`;
             }
 
-            // Team B Row
-            if (bestB[i]) {
+            if (teamMatchData.teamB[i]) {
                 listB.innerHTML += `
                     <div class="match-row">
                         <input type="number" id="input_B_${i}" class="match-input" placeholder="타수" pattern="\\d*">
-                        <span style="width:50px; font-weight:bold; text-align:right;">${bestB[i].name}</span>
+                        <span style="width:50px; font-weight:bold; text-align:right;">${teamMatchData.teamB[i].name}</span>
                     </div>
                 `;
             } else {
@@ -702,18 +783,17 @@
         }
     }
 
+    // [Step 3] 스코어 계산 및 승패 결정
     function calculateTeamMatch() {
         const teamA = teamMatchData.teamA;
         const teamB = teamMatchData.teamB;
         let htmlResult = '';
-        let winA = 0, winB = 0, draw = 0;
         let totalNetA = 0, totalNetB = 0;
         let exportText = '';
         const matchDate = document.getElementById('teamMatchDate').value;
         let formattedDate = matchDate ? matchDate.replace(/-/g, '. ') : new Date().toISOString().split('T')[0].replace(/-/g, '. ');
 
         let hasEmptyInput = false;
-
         const maxRows = Math.max(teamA.length, teamB.length);
         let matchDetails = [];
 
@@ -737,12 +817,11 @@
                 exportText += `${formattedDate}, ${pB.name}, ${scoreB}, 참여\n`;
             }
 
-            // 1대1 매치 판정 (양쪽 다 플레이어가 있을 경우)
             let resultBadgeA = '', resultBadgeB = '';
             if (pA && pB) {
-                if (netA < netB) { winA++; resultBadgeA = '👑승'; resultBadgeB = '패'; }
-                else if (netB < netA) { winB++; resultBadgeA = '패'; resultBadgeB = '👑승'; }
-                else { draw++; resultBadgeA = '무'; resultBadgeB = '무'; }
+                if (netA < netB) { resultBadgeA = '👑승'; resultBadgeB = '패'; }
+                else if (netB < netA) { resultBadgeA = '패'; resultBadgeB = '👑승'; }
+                else { resultBadgeA = '무'; resultBadgeB = '무'; }
             }
 
             matchDetails.push({ pA, scoreA, netA, resultBadgeA, pB, scoreB, netB, resultBadgeB });
@@ -753,7 +832,6 @@
             return;
         }
 
-        // 결과 렌더링
         htmlResult += `<h4 style="text-align:center; color:#1a365d; margin-top:0;">📊 1대1 에이스 매치 결과</h4>`;
         htmlResult += `<table style="width:100%; background:white; border-radius:8px; overflow:hidden; font-size:13px; margin-bottom:15px;">`;
         htmlResult += `<tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;"><th>팀 A 선수 (Net)</th><th>결과</th><th>팀 B 선수 (Net)</th></tr>`;
@@ -775,7 +853,6 @@
         });
         htmlResult += `</table>`;
 
-        // 팀 전체 네트스코어 평균으로 팀 승패 결정 (인원수가 다를 수 있으므로 평균 활용)
         const avgNetA = totalNetA / teamA.length;
         const avgNetB = totalNetB / teamB.length;
         
@@ -793,8 +870,6 @@
         htmlResult += `<div style="text-align:center; margin-top:15px; font-weight:bold;">${teamWinnerStr}</div>`;
 
         document.getElementById('teamResultContent').innerHTML = htmlResult;
-        
-        // 엑셀 내보내기용 텍스트 (날짜, 이름, 타수, 참여여부)
         document.getElementById('sheetExportData').innerText = exportText;
         
         document.getElementById('step3_result').style.display = 'block';
