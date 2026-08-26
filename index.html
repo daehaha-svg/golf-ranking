@@ -65,7 +65,12 @@
         .vs-badge { background: #475569; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
         .result-box { margin-top: 20px; padding: 15px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
         .sheet-export { margin-top: 15px; padding: 10px; background: #1e293b; color: #a5f3fc; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: keep-all; line-height: 1.4; }
-
+        
+        /* 모드 선택 라디오 버튼 */
+        .mode-selector { margin-bottom: 15px; padding: 12px; background: #e0e7ff; border-radius: 8px; border: 1px solid #c7d2fe; }
+        .mode-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; margin-top: 8px; }
+        .mode-label input[type="radio"] { width: 16px; height: 16px; cursor: pointer; margin:0; }
+        
         /* 방 배정 결과 스타일 */
         .room-box { background-color: #ebf8ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
         .room-title { font-weight: 900; color: #2b6cb0; margin-bottom: 8px; font-size: 16px; border-bottom: 1px dashed #90cdf4; padding-bottom: 8px; }
@@ -137,15 +142,14 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- [모드 2] 팀전 (1대1 선승제) -->
+    <!-- [모드 2] 팀전 -->
     <!-- ========================================== -->
     <div id="viewTeam" class="view-section" style="display: none;">
         <div class="card">
-            <h3 style="margin-bottom:5px;">⚔️ 2팀 대항전 (매치 플레이)</h3>
-            <p style="text-align:center; font-size:12px; color:#64748b; margin-top:0; margin-bottom:20px;">1대1 에이스전 승점 합산 방식 (승 1점 / 무 0.5점)</p>
+            <h3 style="margin-bottom:20px;">⚔️ 2팀 대항전</h3>
             
             <div id="team_step1">
-                <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 선택 (최소 2명)</p>
+                <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 확인</p>
                 <div id="teamPlayerSelect" style="margin-bottom: 15px;"></div>
                 <button class="btn-action" onclick="generateTeams()">팀 자동 편성 및 수정하기</button>
             </div>
@@ -155,6 +159,8 @@
                     <span>2. 팀 수동 편성 (이름 터치 시 이동)</span>
                     <button onclick="resetView('team')" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">인원 다시선택</button>
                 </p>
+                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* 멤버 터치 시: <b>팀 A ➔ 팀 B ➔ 깍두기 ➔ 팀 A</b> 순으로 이동</p>
+                
                 <div class="team-board">
                     <div class="team-col">
                         <div class="team-title team-a-title">🔴 팀 A<br><span id="builderA_handi" style="font-size:11px; font-weight:normal;"></span></div>
@@ -165,18 +171,27 @@
                         <div id="builderB_list" style="min-height: 80px; background: #e2e8f0; padding: 6px; border-radius: 6px;"></div>
                     </div>
                 </div>
+
                 <div style="margin-top: 15px;">
                     <div class="team-title" style="color: #475569; border-color: #cbd5e1; margin-bottom: 5px;">👤 깍두기 (팀전 점수 제외)</div>
                     <div id="builderIndiv_list" style="min-height: 50px; background: #f1f5f9; padding: 6px; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
                 </div>
+
                 <button class="btn-action" onclick="confirmTeams()" style="background-color: #4f46e5; margin-top: 15px;">이대로 확정하고 스코어 입력</button>
             </div>
 
             <div id="team_step2" style="display: none;">
                 <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span>3. 스코어 입력</span>
-                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 수정</button>
+                    <span>3. 스코어 입력 및 룰 선택</span>
+                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 다시짜기</button>
                 </p>
+                
+                <div class="mode-selector">
+                    <label style="font-weight: bold; color: #3730a3; font-size: 13px;">🏆 팀 승패 결정 방식</label>
+                    <label class="mode-label"><input type="radio" name="matchMode" value="stroke" checked> <b>스트로크:</b> 팀별 Net 타수 평균 승부</label>
+                    <label class="mode-label"><input type="radio" name="matchMode" value="match"> <b>매치 플레이:</b> 1대1 에이스전 승점 합산 승부</label>
+                </div>
+                
                 <div class="team-board">
                     <div class="team-col">
                         <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
@@ -188,28 +203,31 @@
                         <div id="teamB_list"></div>
                     </div>
                 </div>
+
                 <div id="indiv_input_section" style="margin-top: 20px; display: none; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
                     <div class="team-title" style="color: #475569; border-color: #cbd5e1; margin-bottom:10px;">👤 깍두기 입력</div>
                     <div id="indiv_list"></div>
                 </div>
+
                 <div style="margin-top: 15px;">
-                    <label style="font-size:13px; font-weight:bold;">경기 날짜 (시트 저장용):</label>
+                    <label style="font-size:13px; font-weight:bold;">경기 날짜 지정 (시트 저장용):</label>
                     <input type="date" id="teamMatchDate" style="padding:8px; margin-top:5px; font-size:14px;">
                 </div>
-                <button class="btn-action" onclick="calculateTeamMatch()" style="background-color: #059669;">매치 결과 보기</button>
+
+                <button class="btn-action" onclick="calculateTeamMatch()" style="background-color: #059669;">결과 발표 보기</button>
             </div>
 
             <div id="team_step3" style="display: none;">
                 <div class="result-box" id="teamResultContent"></div>
                 <h4 style="margin-top: 20px; margin-bottom: 5px; color:#1e293b;">📌 구글 시트 복사용 데이터</h4>
-                <p style="font-size:11px; color:#64748b; margin:0 0 10px 0;">랭킹 반영을 위해 시트에 붙여넣기 하세요.</p>
+                <p style="font-size:11px; color:#64748b; margin:0 0 10px 0;">누적 랭킹 반영을 위해 시트에 복사해주세요.</p>
                 <div class="sheet-export" id="sheetExportData"></div>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- [모드 3] 방전 (핸디 균등 분배) -->
+    <!-- [모드 3] 방전 -->
     <!-- ========================================== -->
     <div id="viewRoom" class="view-section" style="display: none;">
         <div class="card">
@@ -217,7 +235,7 @@
             <p style="text-align:center; font-size:12px; color:#64748b; margin-top:0; margin-bottom:20px;">각 방의 평균 핸디캡이 동일해지도록 인원을 자동 배정합니다.</p>
             
             <div id="room_step1">
-                <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 선택</p>
+                <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 확인</p>
                 <div id="roomPlayerSelect" style="margin-bottom: 15px;"></div>
                 
                 <p style="font-size: 14px; font-weight: bold; color: #475569; margin-top:20px;">2. 배정할 방 개수</p>
@@ -229,14 +247,14 @@
             <div id="room_step2" style="display: none;">
                 <h4 style="color:#1a365d; margin-bottom:15px;">🎉 방 배정 완료!</h4>
                 <div id="roomResultBox"></div>
-                <button class="btn-action btn-kakao" onclick="copyToKakao('room')">💬 카톡으로 결과 복사하기</button>
+                <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 결과 복사하기</button>
                 <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('room')">다시 배정하기</button>
             </div>
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- [모드 4] 라이벌전 (비슷한 핸디끼리 매칭 후 방 배정) -->
+    <!-- [모드 4] 라이벌전 -->
     <!-- ========================================== -->
     <div id="viewRival" class="view-section" style="display: none;">
         <div class="card">
@@ -244,7 +262,7 @@
             <p style="text-align:center; font-size:12px; color:#64748b; margin-top:0; margin-bottom:20px;">핸디캡이 가장 비슷한 사람끼리 1대1 짝을 맺어 방에 배정합니다.</p>
             
             <div id="rival_step1">
-                <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 선택</p>
+                <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 확인</p>
                 <div id="rivalPlayerSelect" style="margin-bottom: 15px;"></div>
                 
                 <p style="font-size: 14px; font-weight: bold; color: #475569; margin-top:20px;">2. 사용할 방 개수</p>
@@ -256,7 +274,7 @@
             <div id="rival_step2" style="display: none;">
                 <h4 style="color:#ea580c; margin-bottom:15px;">🔥 라이벌 대진표 완성!</h4>
                 <div id="rivalResultBox"></div>
-                <button class="btn-action btn-kakao" onclick="copyToKakao('rival')">💬 카톡으로 대진표 복사하기</button>
+                <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 대진표 복사하기</button>
                 <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('rival')">다시 배정하기</button>
             </div>
         </div>
@@ -266,7 +284,7 @@
 
 <script>
     // =====================================================================
-    // ★ [1] 구글 시트 링크 및 수동 데이터
+    // ★ [1] 설정
     // =====================================================================
     const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPc5vmxIbF91Tq-sHJU0OAm52uM5gezsNv2iUyU_776aEwnZjYakpbhn8hHl696Q19EiD8CD0xvPYu/pub?output=csv';
 
@@ -275,17 +293,17 @@
         '심덕보': { first: 0, second: 1, third: 0, improved: 0 },
         '성주암': { first: 0, second: 0, third: 1, improved: 0 },        
     };
-
-    const MANUAL_HANDICAPS = {
-       '김형준': 4,
-       '김현택': 2,
-    };
+    const MANUAL_HANDICAPS = { '김형준': 4, '김현택': 2 };
 
     let records = [];
     let globalStats = {};
     let selectedFee = null; 
     let teamMatchData = { teamA: [], teamB: [], indiv: [] }; 
-    let clipboardText = ""; // 카톡 복사용 변수
+    let clipboardText = ""; 
+    
+    // ★ 자동 선택을 위한 시트 최신 명단 저장
+    let sheetEntries = [];
+    let latestSheetPlayers = [];
 
     // ---------------------------------------------------------------------
     // 공통 헬퍼 함수
@@ -310,7 +328,7 @@
         return `<span style="color:#111;">0</span>`;
     }
 
-    function copyToKakao(type) {
+    function copyToKakao() {
         if(navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(clipboardText).then(() => {
                 alert('결과가 복사되었습니다! 카톡창에 [붙여넣기] 해주세요.');
@@ -327,7 +345,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // 탭 및 뷰 전환 로직
+    // 탭 및 뷰 전환, 인원 자동 선택 로직
     // ---------------------------------------------------------------------
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -348,16 +366,49 @@
         if(document.getElementById(`${type}_step3`)) document.getElementById(`${type}_step3`).style.display = 'none';
     }
 
+    // ★ 구글 시트에 입력된 최신 멤버를 기본적으로 "선택됨(파란색)" 처리
     function initPlayerSelect(containerId) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
+        
+        const hint = document.createElement('p');
+        hint.style = 'font-size:11px; color:#64748b; margin-top:-5px; margin-bottom:10px; line-height:1.4;';
+        hint.innerHTML = '* 시트에 입력된 <b>최근 명단이 자동 선택</b>되어 있습니다.<br>안 치는 사람은 터치해서 빼주세요.';
+        container.appendChild(hint);
+
+        const btnGroup = document.createElement('div');
+        btnGroup.style.marginBottom = '10px';
+        btnGroup.innerHTML = `
+            <button onclick="selectAll('${containerId}', true)" style="padding:4px 8px; font-size:12px; border-radius:4px; border:1px solid #ccc; background:#fff; cursor:pointer; margin-right:5px;">전체 선택</button>
+            <button onclick="selectAll('${containerId}', false)" style="padding:4px 8px; font-size:12px; border-radius:4px; border:1px solid #ccc; background:#fff; cursor:pointer;">전체 해제</button>
+        `;
+        container.appendChild(btnGroup);
+
+        const listDiv = document.createElement('div');
+        listDiv.id = containerId + '_list';
+
         const names = Object.keys(globalStats).sort();
         names.forEach(name => {
             const span = document.createElement('span');
             span.className = 'player-checkbox';
+            
+            // 시트 최신 명단에 있으면 파란색으로 자동 선택
+            if (latestSheetPlayers.includes(name)) {
+                span.classList.add('selected');
+            }
+            
             span.innerHTML = `${name} <span style="font-size:11px; font-weight:normal;">(${formatHandi(globalStats[name].handicap)})</span>`;
             span.onclick = function() { this.classList.toggle('selected'); };
-            container.appendChild(span);
+            listDiv.appendChild(span);
+        });
+        container.appendChild(listDiv);
+    }
+
+    function selectAll(containerId, isSelect) {
+        const listDiv = document.getElementById(containerId + '_list');
+        listDiv.querySelectorAll('.player-checkbox').forEach(el => {
+            if(isSelect) el.classList.add('selected');
+            else el.classList.remove('selected');
         });
     }
 
@@ -397,7 +448,9 @@
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/);
         records = [];
+        sheetEntries = []; // 자동 선택을 위한 기록
         if (lines.length < 2) return;
+        
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
         let dateIdx = headers.findIndex(h => h.includes('날짜'));
         let nameIdx = headers.findIndex(h => h.includes('이름'));
@@ -405,32 +458,65 @@
         let prizeIdx = headers.findIndex(h => h.includes('상금전') || h.includes('참여여부'));
 
         for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',');
-            if (cols.length > Math.max(dateIdx, nameIdx, scoreIdx)) {
-                let date = cols[dateIdx]?.trim().replace(/\.\s+/g, '-').replace(/\./g, '');
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const cols = line.split(',');
+            // 타수가 비어있어도(이름만 적혀있어도) 읽어올 수 있도록 검사 완화
+            if (cols.length > Math.max(dateIdx, nameIdx)) {
+                let date = cols[dateIdx]?.trim();
                 let name = cols[nameIdx]?.trim();
-                let rawScore = parseInt(cols[scoreIdx]?.replace(/[^0-9\-]/g, '')); 
                 
-                let prizeJoin = '참여', fee = 5000; 
-                if (prizeIdx !== -1 && cols[prizeIdx]) {
-                    let pVal = cols[prizeIdx].trim().toUpperCase();
-                    if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함')) { prizeJoin = '미참여'; fee = 0; }
-                    else { let pNum = parseInt(pVal.replace(/[^0-9]/g, '')); if(!isNaN(pNum) && pNum >= 1000) fee = pNum; }
-                }
-                
-                if (!isNaN(rawScore) && name) {
-                    let totalScore = rawScore < 50 && rawScore > -40 ? 72 + rawScore : rawScore;
-                    let overPar = rawScore < 50 && rawScore > -40 ? rawScore : rawScore - 72;
-                    records.push({ date, name, totalScore, overPar, prizeJoin, fee });
+                if (date && name) {
+                    let cleanDate = date.replace(/\.\s+/g, '-').replace(/\./g, '').trim();
+                    if (cleanDate.includes('-')) {
+                        let parts = cleanDate.split('-');
+                        if (parts.length >= 3) {
+                            cleanDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                        }
+                    }
+                    
+                    // 스코어 유무 상관없이 시트에 적힌 이름 모두 수집 (자동 선택 기능용)
+                    sheetEntries.push({ date: cleanDate, name: name });
+
+                    // 랭킹 기록은 타수가 제대로 적혀있는 사람만 수집
+                    if (scoreIdx !== -1 && cols[scoreIdx]) {
+                        let rawScoreStr = cols[scoreIdx].trim().replace(/[^0-9\-]/g, '');
+                        let rawScore = parseInt(rawScoreStr); 
+                        
+                        let prizeJoin = '참여', fee = 5000; 
+                        if (prizeIdx !== -1 && cols[prizeIdx]) {
+                            let pVal = cols[prizeIdx].trim().toUpperCase();
+                            if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함')) { prizeJoin = '미참여'; fee = 0; }
+                            else { let pNum = parseInt(pVal.replace(/[^0-9]/g, '')); if(!isNaN(pNum) && pNum >= 1000) fee = pNum; }
+                        }
+                        
+                        if (!isNaN(rawScore)) {
+                            let totalScore = rawScore < 50 && rawScore > -40 ? 72 + rawScore : rawScore;
+                            let overPar = rawScore < 50 && rawScore > -40 ? rawScore : rawScore - 72;
+                            records.push({ date: cleanDate, name, totalScore, overPar, prizeJoin, fee });
+                        }
+                    }
                 }
             }
         }
         records.sort((a, b) => a.date.localeCompare(b.date));
+
+        // 시트에 적힌 가장 최근 날짜의 인원들을 추출 (자동 선택용)
+        if (sheetEntries.length > 0) {
+            sheetEntries.sort((a, b) => a.date.localeCompare(b.date));
+            const latestDate = sheetEntries[sheetEntries.length - 1].date;
+            latestSheetPlayers = [...new Set(sheetEntries.filter(r => r.date === latestDate).map(r => r.name))];
+        }
     }
 
     function processStats() {
         globalStats = {};
         const players = [...new Set(records.map(r => r.name))];
+        
+        // 타수는 없지만 시트에 이름이 미리 적혀있는 신규 멤버도 리스트에 추가
+        latestSheetPlayers.forEach(n => { if(!players.includes(n)) players.push(n); });
+        
         Object.keys(MANUAL_AWARDS).forEach(n => { if(!players.includes(n)) players.push(n); });
         Object.keys(MANUAL_HANDICAPS).forEach(n => { if(!players.includes(n)) players.push(n); });
 
@@ -550,7 +636,7 @@
 
 
     // =====================================================================
-    // [모드 2] 팀전 (1대1 매치플레이)
+    // [모드 2] 팀전 (1대1 매치플레이 & 깍두기)
     // =====================================================================
     function generateTeams() {
         let players = getSelectedPlayers('teamPlayerSelect');
@@ -597,6 +683,7 @@
     }
 
     function confirmTeams() {
+        if(teamMatchData.teamA.length === 0 && teamMatchData.teamB.length === 0) return alert('모두 깍두기일 수는 없습니다. 팀을 배정해주세요.');
         teamMatchData.teamA.sort((a,b)=>a.handi-b.handi); teamMatchData.teamB.sort((a,b)=>a.handi-b.handi); teamMatchData.indiv.sort((a,b)=>a.handi-b.handi);
         document.getElementById('team_step1_5').style.display='none'; document.getElementById('team_step2').style.display='block';
         
@@ -618,8 +705,9 @@
     }
 
     function calculateTeamMatch() {
+        const mode = document.querySelector('input[name="matchMode"]:checked').value;
         let html='', exp='', d=document.getElementById('teamMatchDate').value.replace(/-/g,'. ')||new Date().toISOString().split('T')[0].replace(/-/g,'. ');
-        let pA=0, pB=0, hasEmp=false, max = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
+        let tNetA=0, tNetB=0, pA=0, pB=0, hasEmp=false, max = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
 
         html+=`<h4 style="text-align:center; color:#1a365d; margin-top:0;">📊 에이스 1대1 매치 결과</h4><table style="width:100%; background:white; border-radius:8px; font-size:13px; margin-bottom:15px;"><tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;"><th>팀 A (Net)</th><th>승패</th><th>팀 B (Net)</th></tr>`;
 
@@ -629,13 +717,14 @@
             if(tA&&isNaN(sA))hasEmp=true; if(tB&&isNaN(sB))hasEmp=true;
             
             let nA=tA?sA-tA.handi:null, nB=tB?sB-tB.handi:null;
-            if(tA) exp+=`${d}, ${tA.name}, ${sA}, 참여\n`; if(tB) exp+=`${d}, ${tB.name}, ${sB}, 참여\n`;
+            if(tA) { tNetA+=nA; exp+=`${d}, ${tA.name}, ${sA}, 참여\n`; } 
+            if(tB) { tNetB+=nB; exp+=`${d}, ${tB.name}, ${sB}, 참여\n`; }
 
             let resA='', resB='', colA='#111', colB='#111';
             if(tA&&tB) {
-                if(nA<nB){ resA='승(1)'; resB='패(0)'; pA+=1; colA='#dc2626'; }
-                else if(nB<nA){ resA='패(0)'; resB='승(1)'; pB+=1; colB='#2563eb'; }
-                else { resA='무(0.5)'; resB='무(0.5)'; pA+=0.5; pB+=0.5; colA='#64748b'; colB='#64748b'; }
+                if(nA<nB){ resA=mode==='match'?'승(1)':'👑승'; resB=mode==='match'?'패(0)':'패'; pA+=1; colA='#dc2626'; }
+                else if(nB<nA){ resA=mode==='match'?'패(0)':'패'; resB=mode==='match'?'승(1)':'👑승'; pB+=1; colB='#2563eb'; }
+                else { resA=mode==='match'?'무(0.5)':'무'; resB=mode==='match'?'무(0.5)':'무'; pA+=0.5; pB+=0.5; colA='#64748b'; colB='#64748b'; }
                 html+=`<tr><td style="color:${colA};"><strong>${tA.name}</strong> <span style="font-size:11px;">(${nA})</span></td><td style="font-weight:bold;font-size:11px;">${resA} : ${resB}</td><td style="color:${colB};"><strong>${tB.name}</strong> <span style="font-size:11px;">(${nB})</span></td></tr>`;
             } else {
                 if(tA) html+=`<tr><td><strong>${tA.name}</strong> <span style="font-size:11px;">(${nA})</span></td><td style="font-size:11px;color:#94a3b8;">상대없음</td><td>-</td></tr>`;
@@ -651,14 +740,21 @@
 
         if(hasEmp) return alert('모든 타수를 입력해주세요.');
 
-        let wStr = pA>pB ? `<span style="color:#dc2626; font-size:20px;">팀 A 승리! 🏆</span>` : (pB>pA ? `<span style="color:#2563eb; font-size:20px;">팀 B 승리! 🏆</span>` : `<span style="color:#475569; font-size:20px;">무승부! 🤝</span>`);
-        html += `<h4 style="text-align:center; color:#1a365d; border-top:1px dashed #cbd5e1; padding-top:15px;">🌐 최종 승점 합산</h4><div style="display:flex; justify-content:space-around; align-items:center; text-align:center; margin-bottom:10px;"><div><div style="font-weight:bold; color:#dc2626;">팀 A</div><div style="font-size:16px; font-weight:900;">${pA} 점</div></div><div style="font-size:18px; font-weight:bold;">VS</div><div><div style="font-weight:bold; color:#2563eb;">팀 B</div><div style="font-size:16px; font-weight:900;">${pB} 점</div></div></div><div style="text-align:center; margin-top:15px; font-weight:bold;">${wStr}</div>`;
+        let wStr=''; html += `<h4 style="text-align:center; color:#1a365d; border-top:1px dashed #cbd5e1; padding-top:15px;">🌐 최종 경기 결과 (${mode==='stroke'?'스트로크':'매치 플레이'})</h4><div style="display:flex; justify-content:space-around; align-items:center; text-align:center; margin-bottom:10px;">`;
+        if(mode==='stroke') {
+            let aA = teamMatchData.teamA.length>0?tNetA/teamMatchData.teamA.length:0, aB = teamMatchData.teamB.length>0?tNetB/teamMatchData.teamB.length:0;
+            html += `<div><div style="font-weight:bold; color:#dc2626;">팀 A</div><div style="font-size:16px; font-weight:900;">${aA.toFixed(1)} <span style="font-size:11px; font-weight:normal;">(평균Net)</span></div></div><div style="font-size:18px; font-weight:bold;">VS</div><div><div style="font-weight:bold; color:#2563eb;">팀 B</div><div style="font-size:16px; font-weight:900;">${aB.toFixed(1)} <span style="font-size:11px; font-weight:normal;">(평균Net)</span></div></div></div>`;
+            wStr = aA<aB ? `<span style="color:#dc2626; font-size:20px;">팀 A 승리! 🏆</span>` : (aB<aA ? `<span style="color:#2563eb; font-size:20px;">팀 B 승리! 🏆</span>` : `<span style="color:#475569; font-size:20px;">무승부! 🤝</span>`);
+        } else {
+            html += `<div><div style="font-weight:bold; color:#dc2626;">팀 A</div><div style="font-size:16px; font-weight:900;">${pA} 점</div></div><div style="font-size:18px; font-weight:bold;">VS</div><div><div style="font-weight:bold; color:#2563eb;">팀 B</div><div style="font-size:16px; font-weight:900;">${pB} 점</div></div></div>`;
+            wStr = pA>pB ? `<span style="color:#dc2626; font-size:20px;">팀 A 승리! 🏆</span>` : (pB>pA ? `<span style="color:#2563eb; font-size:20px;">팀 B 승리! 🏆</span>` : `<span style="color:#475569; font-size:20px;">무승부! 🤝</span>`);
+        }
+        html += `<div style="text-align:center; margin-top:15px; font-weight:bold;">${wStr}</div>`;
 
         document.getElementById('teamResultContent').innerHTML = html;
         document.getElementById('sheetExportData').innerText = exp;
         document.getElementById('team_step2').style.display='none'; document.getElementById('team_step3').style.display='block';
     }
-
 
     // =====================================================================
     // [모드 3] 방전 (네트워크 방전 - 균등 핸디 배정)
@@ -668,12 +764,11 @@
         let rCount = parseInt(document.getElementById('roomCount').value);
         if(players.length < rCount) return alert('참가자가 방 개수보다 적습니다.');
 
-        players.sort((a,b) => b.handi - a.handi); // 높은 핸디부터
+        players.sort((a,b) => b.handi - a.handi);
         let rooms = Array.from({length: rCount}, (_, i)=>({ id: i+1, name: `${i+1}번 방`, players: [], sum: 0 }));
 
-        // Greedy distribution to balance handicap sums
         players.forEach(p => {
-            rooms.sort((a,b) => a.sum - b.sum); // 가장 합이 적은 방에 배정
+            rooms.sort((a,b) => a.sum - b.sum); 
             rooms[0].players.push(p);
             rooms[0].sum += p.handi;
         });
@@ -690,7 +785,6 @@
         document.getElementById('room_step1').style.display='none'; document.getElementById('room_step2').style.display='block';
     }
 
-
     // =====================================================================
     // [모드 4] 라이벌전 (1대1 매칭 후 방 배정)
     // =====================================================================
@@ -699,19 +793,15 @@
         let rCount = parseInt(document.getElementById('rivalRoomCount').value);
         if(players.length < rCount) return alert('참가자가 방 개수보다 적습니다.');
 
-        players.sort((a,b) => a.handi - b.handi); // 비슷한 핸디끼리 매칭을 위해 오름차순 정렬
+        players.sort((a,b) => a.handi - b.handi); 
         let pairs = [];
         for(let i=0; i<players.length; i+=2) {
             if(players[i+1]) pairs.push({ p1: players[i], p2: players[i+1] });
-            else pairs.push({ p1: players[i], p2: null }); // 홀수 남은 1명
+            else pairs.push({ p1: players[i], p2: null }); 
         }
 
         let rooms = Array.from({length: rCount}, (_, i)=>({ id: i+1, name: `${i+1}번 방`, pairs: [] }));
-        
-        // 쌍(Pair)들을 방에 골고루 분배 (라운드 로빈)
-        pairs.forEach((pair, idx) => {
-            rooms[idx % rCount].pairs.push(pair);
-        });
+        pairs.forEach((pair, idx) => rooms[idx % rCount].pairs.push(pair));
 
         let html = ''; clipboardText = "[🔥 라이벌 매칭 및 방 배정 결과]\n(핸디캡이 가장 비슷한 사람끼리 매칭)\n\n";
         rooms.sort((a,b)=>a.id-b.id).forEach(r => {
