@@ -482,19 +482,21 @@
                     // 랭킹 기록은 타수가 제대로 적혀있는 사람만 수집
                     if (scoreIdx !== -1 && cols[scoreIdx]) {
                         let rawScoreStr = cols[scoreIdx].trim().replace(/[^0-9\-]/g, '');
-                        let rawScore = parseInt(rawScoreStr); 
-                        
-                        let prizeJoin = '참여', fee = 5000; 
-                        if (prizeIdx !== -1 && cols[prizeIdx]) {
-                            let pVal = cols[prizeIdx].trim().toUpperCase();
-                            if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함')) { prizeJoin = '미참여'; fee = 0; }
-                            else { let pNum = parseInt(pVal.replace(/[^0-9]/g, '')); if(!isNaN(pNum) && pNum >= 1000) fee = pNum; }
-                        }
-                        
-                        if (!isNaN(rawScore)) {
-                            let totalScore = rawScore < 50 && rawScore > -40 ? 72 + rawScore : rawScore;
-                            let overPar = rawScore < 50 && rawScore > -40 ? rawScore : rawScore - 72;
-                            records.push({ date: cleanDate, name, totalScore, overPar, prizeJoin, fee });
+                        if(rawScoreStr !== '') {
+                            let rawScore = parseInt(rawScoreStr); 
+                            
+                            let prizeJoin = '참여', fee = 5000; 
+                            if (prizeIdx !== -1 && cols[prizeIdx]) {
+                                let pVal = cols[prizeIdx].trim().toUpperCase();
+                                if (pVal === 'N' || pVal.includes('미참여') || pVal.includes('안함')) { prizeJoin = '미참여'; fee = 0; }
+                                else { let pNum = parseInt(pVal.replace(/[^0-9]/g, '')); if(!isNaN(pNum) && pNum >= 1000) fee = pNum; }
+                            }
+                            
+                            if (!isNaN(rawScore)) {
+                                let totalScore = rawScore < 50 && rawScore > -40 ? 72 + rawScore : rawScore;
+                                let overPar = rawScore < 50 && rawScore > -40 ? rawScore : rawScore - 72;
+                                records.push({ date: cleanDate, name, totalScore, overPar, prizeJoin, fee });
+                            }
                         }
                     }
                 }
