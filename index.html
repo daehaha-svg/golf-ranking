@@ -34,19 +34,19 @@
         .prize-detail { color: #333; font-size: 12px; margin-top: 4px; line-height: 1.4; }
         .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
 
-        /* 탭 UI 스타일 (4구역) */
+        /* 탭 UI 스타일 */
         .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
         .tab-btn { flex: 1 1 45%; padding: 12px 5px; border: none; border-radius: 8px; background: #e2e8f0; font-weight: bold; font-size: 14px; cursor: pointer; color: #475569; transition: all 0.2s; }
         .tab-btn.active { background: #1e3a8a; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* 공통 플레이어 선택 체크박스 */
+        /* 공통 플레이어 선택 */
         .player-checkbox { display: inline-block; padding: 8px 12px; margin: 4px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 14px; cursor: pointer; transition: 0.2s; }
         .player-checkbox.selected { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
         .btn-action { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.2); }
         .btn-action:active { background: #1d4ed8; }
         .btn-kakao { background-color: #FEE500; color: #000000; margin-top: 15px; box-shadow: 0 4px 6px rgba(254,229,0,0.3); }
         
-        /* 팀전/배정 보드 스타일 */
+        /* 팀전 보드 */
         .team-board { display: flex; gap: 10px; margin-top: 15px; }
         .team-col { flex: 1; background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; }
         .team-title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #cbd5e1; }
@@ -71,7 +71,7 @@
         .mode-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; margin-top: 8px; }
         .mode-label input[type="radio"] { width: 16px; height: 16px; cursor: pointer; margin:0; }
         
-        /* 방 배정 결과 스타일 */
+        /* 방 배정 결과 */
         .room-box { background-color: #ebf8ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
         .room-title { font-weight: 900; color: #2b6cb0; margin-bottom: 8px; font-size: 16px; border-bottom: 1px dashed #90cdf4; padding-bottom: 8px; }
         .room-members { font-weight: bold; color: #1a365d; font-size: 15px; line-height: 1.5; }
@@ -94,14 +94,12 @@
     <!-- ========================================== -->
     <div id="viewMain" class="view-section">
         
-        <!-- 상금전 토글 버튼 -->
         <button id="btnTogglePrize" class="btn-action" style="background-color:#d97706; margin-top:0; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(217,119,6,0.2);" onclick="togglePrizeSection()">💰 날짜별 상금전 결과 보기</button>
 
         <div class="card prize-card" id="prizeSection" style="display: none;">
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
                 <h3 style="margin: 0;">💰 상금전 결과</h3>
                 <div style="display: flex; gap: 10px;">
-                    <!-- 날짜/회차 드롭다운 -->
                     <select id="prizeDateSelect" onchange="renderPrizeMatch()" style="flex: 2; padding: 8px; font-size: 13px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;"></select>
                     <select id="feeSelect" onchange="renderPrizeMatch()" style="flex: 1; padding: 8px; font-size: 13px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;">
                         <option value="5000">5천원</option>
@@ -192,7 +190,7 @@
             <div id="team_step2" style="display: none;">
                 <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span>3. 스코어 입력 및 룰 선택</span>
-                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 다시짜기</button>
+                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 배정 수정</button>
                 </p>
                 
                 <div class="mode-selector">
@@ -200,7 +198,13 @@
                     <label class="mode-label"><input type="radio" name="matchMode" value="stroke" checked> <b>스트로크:</b> 팀별 Net 타수 평균 승부</label>
                     <label class="mode-label"><input type="radio" name="matchMode" value="match"> <b>매치 플레이:</b> 1대1 에이스전 승점 합산 승부</label>
                 </div>
+
+                <!-- ★ 라인업 랜덤 섞기 버튼 -->
+                <div style="text-align:center; margin-bottom:10px;">
+                    <button onclick="shuffleMatchups()" style="padding:8px 16px; background:#f59e0b; color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(245,158,11,0.2);">🎲 1대1 대진표 랜덤 섞기</button>
+                </div>
                 
+                <!-- ★ 대진표 리스트 박스 -->
                 <div class="team-board">
                     <div class="team-col">
                         <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
@@ -307,6 +311,7 @@
     let records = [];
     let globalStats = {};
     let teamMatchData = { teamA: [], teamB: [], indiv: [] }; 
+    let tempTeamScores = {}; // 팀 배정 변경 시 타수 보존용
     let clipboardText = ""; 
     
     let sheetEntries = [];
@@ -388,21 +393,21 @@
         }
     }
 
-    // ★ 오름차순으로 회차를 계산하여 드롭다운 메뉴 채우기
+    // ★ 상금전(참여) 기록이 있는 날짜만 필터링하여 회차 계산
     function updatePrizeDateDropdown() {
         const select = document.getElementById('prizeDateSelect');
         select.innerHTML = '';
         
-        // 1. 오름차순으로 전체 유니크 날짜 추출 (가장 옛날이 1회)
-        const datesAsc = [...new Set(records.map(r => r.date))].sort();
+        // 1. 상금전에 실제 참여한 사람이 최소 1명이라도 있는 날짜만 추출 (오름차순 정렬)
+        const prizeRecords = records.filter(r => r.prizeJoin === '참여');
+        const prizeDatesAsc = [...new Set(prizeRecords.map(r => r.date))].sort();
         
-        // 2. 최신 날짜가 메뉴 맨 위에 오도록 내림차순 배열 생성
-        const datesDesc = [...datesAsc].reverse();
+        // 2. 드롭다운에는 최신 날짜가 위에 오도록 내림차순 정렬
+        const prizeDatesDesc = [...prizeDatesAsc].reverse();
         
-        // 3. 드롭다운에 옵션 추가
-        datesDesc.forEach(d => {
-            // 오름차순 배열에서의 인덱스 + 1이 회차가 됨
-            const roundNum = datesAsc.indexOf(d) + 1;
+        // 3. 드롭다운 옵션 추가 (인덱스+1 = 회차)
+        prizeDatesDesc.forEach(d => {
+            const roundNum = prizeDatesAsc.indexOf(d) + 1;
             select.add(new Option(`[${roundNum}회] ${d} 결과보기`, d));
         });
     }
@@ -620,20 +625,24 @@
 
     function renderPrizeMatch() {
         if (records.length === 0) return;
-        const datesAsc = [...new Set(records.map(r => r.date))].sort();
+        
+        // 1. 상금전에 참여한 기록만 추출하여 오름차순으로 기준 배열 생성
+        const prizeRecords = records.filter(r => r.prizeJoin === '참여');
+        const prizeDatesAsc = [...new Set(prizeRecords.map(r => r.date))].sort();
+        
         let selectedDate = document.getElementById('prizeDateSelect').value;
         if(!selectedDate) {
-            selectedDate = datesAsc[datesAsc.length - 1];
-            if(document.getElementById('prizeDateSelect')) document.getElementById('prizeDateSelect').value = selectedDate;
+            if(prizeDatesAsc.length > 0) {
+                selectedDate = prizeDatesAsc[prizeDatesAsc.length - 1]; // 가장 최신
+                if(document.getElementById('prizeDateSelect')) document.getElementById('prizeDateSelect').value = selectedDate;
+            } else {
+                document.getElementById('prizeWinners').innerHTML = `<div style="text-align:center; padding:10px; color:#6b7280;">상금전 기록이 없습니다.</div>`;
+                document.getElementById('mostImproved').style.display = 'none';
+                return;
+            }
         }
 
         const targetRecords = records.filter(r => r.date === selectedDate);
-        if(targetRecords.length === 0) {
-            document.getElementById('prizeWinners').innerHTML = `<div style="text-align:center; padding:10px; color:#6b7280;">기록이 없습니다.</div>`;
-            document.getElementById('mostImproved').style.display = 'none';
-            return;
-        }
-
         let matchFee = parseInt(document.getElementById('feeSelect').value) || 10000;
         const pastRecords = records.filter(r => r.date < selectedDate);
 
@@ -666,9 +675,10 @@
         improvedCandidates.sort((a, b) => b.diff - a.diff);
         let effortWinner = improvedCandidates.length > 0 ? improvedCandidates[0] : null;
 
-        // ★ 날짜 문자열에 회차 표시
-        const roundNum = datesAsc.indexOf(selectedDate) + 1;
-        document.getElementById('prizeDateStr').innerText = `([${roundNum}회] ${selectedDate} 경기)`;
+        // ★ 날짜 문자열에 정확한 회차 표시 (상금전 참여 기준)
+        const roundNum = prizeDatesAsc.indexOf(selectedDate) + 1;
+        const roundStr = roundNum > 0 ? `[${roundNum}회] ` : '';
+        document.getElementById('prizeDateStr').innerText = `(${roundStr}${selectedDate} 경기)`;
 
         let wDiv = document.getElementById('prizeWinners');
         wDiv.innerHTML = pResults.length > 0 ? `<div style="text-align:center; margin-bottom:12px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">상금전 참가: ${pResults.length}명 / 총 상금: ${pz.total.toLocaleString()}원</div>` : `<div style="text-align:center; padding:10px; color:#6b7280;">상금전 참여자가 없습니다.</div>`;
@@ -716,13 +726,12 @@
 
 
     // =====================================================================
-    // [모드 2] 팀전 (1대1 매치플레이 & 깍두기)
+    // [모드 2] 팀전 (1대1 매치플레이, 라인업 수동조정 및 랜덤 섞기)
     // =====================================================================
     function generateTeams() {
         let players = getSelectedPlayers('teamPlayerSelect');
         if(players.length < 2) return alert('최소 2명을 선택하세요.');
         
-        // 핸디캡 기반 밸런싱
         players.sort((a,b)=> b.handi - a.handi);
         let bestA=[], bestB=[];
         let diff = Infinity;
@@ -764,24 +773,108 @@
 
     function confirmTeams() {
         if(teamMatchData.teamA.length === 0 && teamMatchData.teamB.length === 0) return alert('모두 깍두기일 수는 없습니다. 팀을 배정해주세요.');
-        teamMatchData.teamA.sort((a,b)=>a.handi-b.handi); teamMatchData.teamB.sort((a,b)=>a.handi-b.handi); teamMatchData.indiv.sort((a,b)=>a.handi-b.handi);
-        document.getElementById('team_step1_5').style.display='none'; document.getElementById('team_step2').style.display='block';
+        // 초기에는 핸디캡 오름차순(에이스 대결)으로 정렬
+        teamMatchData.teamA.sort((a,b)=>a.handi-b.handi); 
+        teamMatchData.teamB.sort((a,b)=>a.handi-b.handi); 
+        teamMatchData.indiv.sort((a,b)=>a.handi-b.handi);
         
+        document.getElementById('team_step1_5').style.display='none'; 
+        document.getElementById('team_step2').style.display='block';
+        
+        tempTeamScores = {}; // 팀 편성 초기화 시 타수 저장소도 초기화
+        renderStep2Board();
+    }
+
+    // ★ 입력된 타수를 보존하는 함수
+    function saveTeamScores() {
+        tempTeamScores = {};
+        teamMatchData.teamA.forEach((p, i) => { let el = document.getElementById(`inpA_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
+        teamMatchData.teamB.forEach((p, i) => { let el = document.getElementById(`inpB_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
+        teamMatchData.indiv.forEach((p, i) => { let el = document.getElementById(`inpI_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
+    }
+
+    // ★ 대진표 순서 위아래 이동 함수
+    function movePlayer(team, index, dir) {
+        let arr = team === 'A' ? teamMatchData.teamA : teamMatchData.teamB;
+        if (index + dir < 0 || index + dir >= arr.length) return; // 범위를 벗어나면 무시
+        
+        saveTeamScores();
+        let temp = arr[index];
+        arr[index] = arr[index + dir];
+        arr[index + dir] = temp;
+        
+        renderStep2Board();
+    }
+
+    // ★ 대진표 랜덤 섞기 함수
+    function shuffleMatchups() {
+        saveTeamScores();
+        teamMatchData.teamA.sort(() => Math.random() - 0.5);
+        teamMatchData.teamB.sort(() => Math.random() - 0.5);
+        renderStep2Board();
+    }
+
+    // ★ 스코어 입력 화면 (Step 2) 렌더링
+    function renderStep2Board() {
         document.getElementById('teamA_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamA.reduce((s,p)=>s+p.handi,0))}`;
         document.getElementById('teamB_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamB.reduce((s,p)=>s+p.handi,0))}`;
 
-        let lA=document.getElementById('teamA_list'), lB=document.getElementById('teamB_list'); lA.innerHTML=''; lB.innerHTML='';
+        let lA=document.getElementById('teamA_list'), lB=document.getElementById('teamB_list'); 
+        lA.innerHTML=''; lB.innerHTML='';
+        
+        let btnStyle = "border:none; background:none; padding:2px; font-size:12px; cursor:pointer;";
         let max = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
+        
         for(let i=0; i<max; i++) {
-            lA.innerHTML += teamMatchData.teamA[i] ? `<div class="match-row"><span style="width:50px; font-weight:bold;">${teamMatchData.teamA[i].name}</span><input type="number" id="inpA_${i}" class="match-input" pattern="\\d*"></div>` : `<div class="match-row" style="height:32px;"></div>`;
-            lB.innerHTML += teamMatchData.teamB[i] ? `<div class="match-row"><input type="number" id="inpB_${i}" class="match-input" pattern="\\d*"><span style="width:50px; font-weight:bold; text-align:right;">${teamMatchData.teamB[i].name}</span></div>` : `<div class="match-row" style="height:32px;"></div>`;
+            if (teamMatchData.teamA[i]) {
+                let p = teamMatchData.teamA[i];
+                let val = tempTeamScores[p.name] || '';
+                lA.innerHTML += `
+                    <div class="match-row">
+                        <div style="display:flex; align-items:center; gap:2px;">
+                            <div style="display:flex; flex-direction:column; background:#e2e8f0; border-radius:4px; margin-right:4px;">
+                                <button style="${btnStyle}" onclick="movePlayer('A', ${i}, -1)">🔼</button>
+                                <button style="${btnStyle}" onclick="movePlayer('A', ${i}, 1)">🔽</button>
+                            </div>
+                            <span style="width:45px; font-weight:bold; font-size:13px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
+                        </div>
+                        <input type="number" id="inpA_${i}" class="match-input" pattern="\\d*" value="${val}">
+                    </div>
+                `;
+            } else {
+                lA.innerHTML += `<div class="match-row" style="height:34px;"></div>`;
+            }
+
+            if (teamMatchData.teamB[i]) {
+                let p = teamMatchData.teamB[i];
+                let val = tempTeamScores[p.name] || '';
+                lB.innerHTML += `
+                    <div class="match-row">
+                        <input type="number" id="inpB_${i}" class="match-input" pattern="\\d*" value="${val}">
+                        <div style="display:flex; align-items:center; gap:2px;">
+                            <span style="width:45px; font-weight:bold; font-size:13px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
+                            <div style="display:flex; flex-direction:column; background:#e2e8f0; border-radius:4px; margin-left:4px;">
+                                <button style="${btnStyle}" onclick="movePlayer('B', ${i}, -1)">🔼</button>
+                                <button style="${btnStyle}" onclick="movePlayer('B', ${i}, 1)">🔽</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                lB.innerHTML += `<div class="match-row" style="height:34px;"></div>`;
+            }
         }
 
         let lI=document.getElementById('indiv_list'); lI.innerHTML='';
         if(teamMatchData.indiv.length>0) {
             document.getElementById('indiv_input_section').style.display='block';
-            teamMatchData.indiv.forEach((p,i) => lI.innerHTML+=`<div class="match-row" style="justify-content:center; gap:15px; margin-bottom:10px;"><span style="width:50px; font-weight:bold; text-align:right;">${p.name}</span><input type="number" id="inpI_${i}" class="match-input" pattern="\\d*"><span style="font-size:11px; color:#64748b; width:50px;">(핸디 ${formatHandi(p.handi)})</span></div>`);
-        } else document.getElementById('indiv_input_section').style.display='none';
+            teamMatchData.indiv.forEach((p,i) => {
+                let val = tempTeamScores[p.name] || '';
+                lI.innerHTML+=`<div class="match-row" style="justify-content:center; gap:15px; margin-bottom:10px;"><span style="width:50px; font-weight:bold; text-align:right;">${p.name}</span><input type="number" id="inpI_${i}" class="match-input" pattern="\\d*" value="${val}"><span style="font-size:11px; color:#64748b; width:50px;">(핸디 ${formatHandi(p.handi)})</span></div>`;
+            });
+        } else {
+            document.getElementById('indiv_input_section').style.display='none';
+        }
     }
 
     function calculateTeamMatch() {
