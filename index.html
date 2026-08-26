@@ -60,11 +60,9 @@
         .player-tag.team-b { border-left: 4px solid #3b82f6; color: #1e3a8a; }
         .player-tag.indiv { border-left: 4px solid #64748b; color: #334155; }
 
-        .match-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
-        .match-input { width: 50px; padding: 6px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; }
+        .match-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; min-height: 34px; }
         .vs-badge { background: #475569; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
         .result-box { margin-top: 20px; padding: 15px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
-        .sheet-export { margin-top: 15px; padding: 10px; background: #1e293b; color: #a5f3fc; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: keep-all; line-height: 1.4; }
         
         /* 모드 선택 라디오 버튼 */
         .mode-selector { margin-bottom: 15px; padding: 12px; background: #e0e7ff; border-radius: 8px; border: 1px solid #c7d2fe; }
@@ -93,7 +91,6 @@
     <!-- [모드 1] 랭킹 & 상금전 -->
     <!-- ========================================== -->
     <div id="viewMain" class="view-section">
-        
         <button id="btnTogglePrize" class="btn-action" style="background-color:#d97706; margin-top:0; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(217,119,6,0.2);" onclick="togglePrizeSection()">💰 날짜별 상금전 결과 보기</button>
 
         <div class="card prize-card" id="prizeSection" style="display: none;">
@@ -113,6 +110,9 @@
             <div id="prizeDateStr" style="text-align: left; color: #92400e; font-size: 13px; margin-top: 5px; margin-bottom: 15px; font-weight:bold;"></div>
             <div id="prizeWinners"></div>
             <div id="mostImproved" class="improved-box"></div>
+            
+            <!-- ★ 상금전 카톡 복사 버튼 추가 -->
+            <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 결과 복사하기</button>
         </div>
 
         <div class="card">
@@ -149,7 +149,7 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- [모드 2] 팀전 -->
+    <!-- [모드 2] 팀전 대항전 -->
     <!-- ========================================== -->
     <div id="viewTeam" class="view-section" style="display: none;">
         <div class="card">
@@ -184,13 +184,14 @@
                     <div id="builderIndiv_list" style="min-height: 50px; background: #f1f5f9; padding: 6px; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
                 </div>
 
-                <button class="btn-action" onclick="confirmTeams()" style="background-color: #4f46e5; margin-top: 15px;">이대로 확정하고 스코어 입력</button>
+                <button class="btn-action" onclick="confirmTeams()" style="background-color: #4f46e5; margin-top: 15px;">이대로 대진표 확정하기</button>
             </div>
 
+            <!-- ★ 스코어 입력창이 완전히 사라지고, 대진표 확인 및 시트 연동 버튼만 남은 Step 2 -->
             <div id="team_step2" style="display: none;">
                 <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <span>3. 스코어 입력 및 룰 선택</span>
-                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 배정 수정</button>
+                    <span>3. 대진표 조정 및 룰 선택</span>
+                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 다시짜기</button>
                 </p>
                 
                 <div class="mode-selector">
@@ -199,7 +200,6 @@
                     <label class="mode-label"><input type="radio" name="matchMode" value="match"> <b>매치 플레이:</b> 1대1 에이스전 승점 합산 승부</label>
                 </div>
 
-                <!-- ★ 라인업 랜덤 섞기 버튼 추가 -->
                 <div style="text-align:center; margin-bottom:10px;">
                     <button onclick="shuffleMatchups()" style="padding:8px 16px; background:#f59e0b; color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(245,158,11,0.2);">🎲 1대1 대진표 랜덤 섞기</button>
                 </div>
@@ -207,33 +207,36 @@
                 <div class="team-board">
                     <div class="team-col">
                         <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
-                        <div id="teamA_list"></div>
+                        <div id="teamA_list_step2"></div>
                     </div>
                     <div style="display:flex; flex-direction:column; justify-content:center; gap:25px; padding-top:35px;"><span class="vs-badge">VS</span></div>
                     <div class="team-col">
                         <div class="team-title team-b-title">🔵 팀 B<br><span id="teamB_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
-                        <div id="teamB_list"></div>
+                        <div id="teamB_list_step2"></div>
                     </div>
                 </div>
 
-                <div id="indiv_input_section" style="margin-top: 20px; display: none; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
-                    <div class="team-title" style="color: #475569; border-color: #cbd5e1; margin-bottom:10px;">👤 깍두기 입력</div>
-                    <div id="indiv_list"></div>
+                <div id="indiv_view_section" style="margin-top: 20px; display: none; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+                    <div class="team-title" style="color: #475569; border-color: #cbd5e1; margin-bottom:10px;">👤 깍두기</div>
+                    <div id="indiv_list_step2" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
                 </div>
 
-                <div style="margin-top: 15px;">
-                    <label style="font-size:13px; font-weight:bold;">경기 날짜 지정 (시트 저장용):</label>
-                    <input type="date" id="teamMatchDate" style="padding:8px; margin-top:5px; font-size:14px;">
+                <!-- 시트 연동을 위한 날짜 선택기 -->
+                <div style="margin-top: 20px; padding: 15px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
+                    <label style="font-size:13px; font-weight:bold; color: #1e40af;">📅 타수를 불러올 경기 날짜 선택:</label>
+                    <select id="teamMatchDateSelect" style="margin-top:8px; font-size:14px; font-weight:bold; color:#1e3a8a;"></select>
+                    <p style="font-size:11px; color:#3b82f6; margin-top:8px; margin-bottom:0; line-height:1.4;">
+                        * 구글 시트에 먼저 타수를 입력하신 후 아래 버튼을 누르면<br>앱이 자동으로 시트를 읽어와 승패를 계산합니다.
+                    </p>
                 </div>
 
-                <button class="btn-action" onclick="calculateTeamMatch()" style="background-color: #059669;">결과 발표 보기</button>
+                <button class="btn-action" id="btnCalcTeam" onclick="calculateTeamMatch()" style="background-color: #059669;">🔄 시트 타수 연동하여 결과 보기</button>
             </div>
 
             <div id="team_step3" style="display: none;">
                 <div class="result-box" id="teamResultContent"></div>
-                <h4 style="margin-top: 20px; margin-bottom: 5px; color:#1e293b;">📌 구글 시트 복사용 데이터</h4>
-                <p style="font-size:11px; color:#64748b; margin:0 0 10px 0;">누적 랭킹 반영을 위해 시트에 복사해주세요.</p>
-                <div class="sheet-export" id="sheetExportData"></div>
+                <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 결과 복사하기</button>
+                <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('team')">팀 다시짜기</button>
             </div>
         </div>
     </div>
@@ -310,7 +313,6 @@
     let records = [];
     let globalStats = {};
     let teamMatchData = { teamA: [], teamB: [], indiv: [] }; 
-    let tempTeamScores = {}; // ★ 매치업 순서 변경 시 타수 보존용
     let clipboardText = ""; 
     
     let sheetEntries = [];
@@ -457,25 +459,30 @@
     }
 
     // ---------------------------------------------------------------------
-    // [모드 1] 상금전 기본 로직
+    // [데이터 불러오기 및 통계 처리]
     // ---------------------------------------------------------------------
-    async function fetchData() {
+    async function fetchDataSilent() {
         try {
             const response = await fetch(CSV_URL);
             const csvText = await response.text();
             parseCSV(csvText);
-            
-            document.getElementById('loadingMsg').style.display = 'none';
-            document.getElementById('rankingTable').style.display = 'table';
-            
             processStats();
             updatePrizeDateDropdown();
-            renderRanking();
             updateNameDropdown();
-            
-            const today = new Date().toISOString().split('T')[0];
-            if(document.getElementById('teamMatchDate')) document.getElementById('teamMatchDate').value = today;
+            return true;
         } catch (error) {
+            console.error("데이터 로딩 실패");
+            return false;
+        }
+    }
+
+    async function fetchData() {
+        const success = await fetchDataSilent();
+        if(success) {
+            document.getElementById('loadingMsg').style.display = 'none';
+            document.getElementById('rankingTable').style.display = 'table';
+            renderRanking();
+        } else {
             document.getElementById('loadingMsg').innerText = '데이터 로딩 실패';
         }
     }
@@ -671,20 +678,27 @@
         const roundStr = roundNum > 0 ? `[${roundNum}회] ` : '';
         document.getElementById('prizeDateStr').innerText = `(${roundStr}${selectedDate} 경기)`;
 
+        // ★ 카톡 복사용 텍스트 생성
+        clipboardText = `[💰 ${roundStr}${selectedDate} 상금전 결과]\n\n`;
+
         let wDiv = document.getElementById('prizeWinners');
         wDiv.innerHTML = pResults.length > 0 ? `<div style="text-align:center; margin-bottom:12px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">상금전 참가: ${pResults.length}명 / 총 상금: ${pz.total.toLocaleString()}원</div>` : `<div style="text-align:center; padding:10px; color:#6b7280;">상금전 참여자가 없습니다.</div>`;
         
         pResults.forEach((p, i) => {
             let pm = i===0?pz.p1:(i===1?pz.p2:(i===2?pz.p3:0));
             wDiv.innerHTML += `<div class="prize-item"><div class="prize-rank">${getRankBadge(i)}</div><div class="prize-name">${p.name} ${pm>0?`<span style="color:#e53e3e;font-size:13px;">💰${pm.toLocaleString()}원</span>`:''}</div><div class="prize-score"><div class="prize-net">${p.netScore}타</div><div class="prize-detail">${p.totalScore}타(${formatOverPar(p.overPar)})-핸디(${formatHandi(p.handi)})</div></div></div>`;
+            clipboardText += `${i===0?'🏆 1등':(i===1?'🥈 2등':(i===2?'🥉 3등':`${i+1}등`))}: ${p.name} ${pm>0?`(${pm.toLocaleString()}원)`:''} - Net ${p.netScore}타\n`;
         });
 
         const impDiv = document.getElementById('mostImproved');
         impDiv.style.display = 'block';
         if (improvedCandidates.length > 0) {
             let listHtml = `<div style="font-size: 14px; font-weight: bold; color: #1e40af; margin-bottom: 8px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px;">🔥 단축 기록 (TOP 4)</div>`;
+            clipboardText += `\n[🔥 단축 기록 TOP]\n`;
             improvedCandidates.slice(0, 4).forEach((c, idx) => {
-                listHtml += `<div style="text-align: left; margin-bottom: 6px; font-size: 13px;"><span style="display:inline-block; width:18px; font-weight:bold; color:#2b6cb0;">${idx + 1}.</span> <span style="color: #333; font-weight:bold;">${c.name} <span style="color:#ef4444;">(-${c.diff}타)</span></span> <span style="font-size: 11px; color: #6b7280;">(${c.prev}➔${c.curr})</span> ${(effortWinner && c.name === effortWinner.name) ? `<span style="color:#e53e3e; font-weight:bold; font-size:12px;">[🏆 단축왕]</span>` : ''}</div>`;
+                let badgeStr = (effortWinner && c.name === effortWinner.name) ? '[🏆 단축왕]' : '';
+                listHtml += `<div style="text-align: left; margin-bottom: 6px; font-size: 13px;"><span style="display:inline-block; width:18px; font-weight:bold; color:#2b6cb0;">${idx + 1}.</span> <span style="color: #333; font-weight:bold;">${c.name} <span style="color:#ef4444;">(-${c.diff}타)</span></span> <span style="font-size: 11px; color: #6b7280;">(${c.prev}➔${c.curr})</span> <span style="color:#e53e3e; font-weight:bold; font-size:12px;">${badgeStr}</span></div>`;
+                clipboardText += `${idx+1}. ${c.name} (-${c.diff}타) ${badgeStr}\n`;
             });
             impDiv.innerHTML = listHtml;
         } else {
@@ -717,7 +731,7 @@
 
 
     // =====================================================================
-    // [모드 2] 팀전 (1대1 매치플레이, 대진표 조정 및 랜덤)
+    // [모드 2] 팀전 대항전 (수동/랜덤 대진표, 시트 연동)
     // =====================================================================
     function generateTeams() {
         let players = getSelectedPlayers('teamPlayerSelect');
@@ -773,16 +787,7 @@
         document.getElementById('team_step1_5').style.display='none'; 
         document.getElementById('team_step2').style.display='block';
         
-        tempTeamScores = {}; // 초기화
         renderStep2Board();
-    }
-
-    // ★ 대진표 조정 시 입력해둔 타수가 날아가지 않도록 보존
-    function saveTeamScores() {
-        tempTeamScores = {};
-        teamMatchData.teamA.forEach((p, i) => { let el = document.getElementById(`inpA_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
-        teamMatchData.teamB.forEach((p, i) => { let el = document.getElementById(`inpB_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
-        teamMatchData.indiv.forEach((p, i) => { let el = document.getElementById(`inpI_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
     }
 
     // ★ 대진표 순서 위아래 이동
@@ -790,7 +795,6 @@
         let arr = team === 'A' ? teamMatchData.teamA : teamMatchData.teamB;
         if (index + dir < 0 || index + dir >= arr.length) return; 
         
-        saveTeamScores();
         let temp = arr[index];
         arr[index] = arr[index + dir];
         arr[index + dir] = temp;
@@ -800,52 +804,49 @@
 
     // ★ 대진표 랜덤 섞기
     function shuffleMatchups() {
-        saveTeamScores();
         teamMatchData.teamA.sort(() => Math.random() - 0.5);
         teamMatchData.teamB.sort(() => Math.random() - 0.5);
         renderStep2Board();
     }
 
-    // ★ 스코어 입력 보드 렌더링 (대진표 조정 버튼 포함)
+    // ★ 시트 데이터에서 가져온 날짜 드롭다운 세팅
     function renderStep2Board() {
         document.getElementById('teamA_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamA.reduce((s,p)=>s+p.handi,0))}`;
         document.getElementById('teamB_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamB.reduce((s,p)=>s+p.handi,0))}`;
 
-        let lA=document.getElementById('teamA_list'), lB=document.getElementById('teamB_list'); 
+        let lA=document.getElementById('teamA_list_step2'), lB=document.getElementById('teamB_list_step2'); 
         lA.innerHTML=''; lB.innerHTML='';
         
-        let btnStyle = "border:none; background:none; padding:2px; font-size:12px; cursor:pointer;";
+        let btnStyle = "border:none; background:none; padding:1px 3px; font-size:12px; cursor:pointer;";
         let max = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
         
         for(let i=0; i<max; i++) {
             if (teamMatchData.teamA[i]) {
                 let p = teamMatchData.teamA[i];
-                let val = tempTeamScores[p.name] || '';
                 lA.innerHTML += `
                     <div class="match-row">
-                        <div style="display:flex; align-items:center; gap:2px;">
-                            <div style="display:flex; flex-direction:column; background:#e2e8f0; border-radius:4px; margin-right:4px;">
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <div style="display:flex; flex-direction:column; background:#e2e8f0; border-radius:4px; margin-right:2px;">
                                 <button style="${btnStyle}" onclick="movePlayer('A', ${i}, -1)">🔼</button>
                                 <button style="${btnStyle}" onclick="movePlayer('A', ${i}, 1)">🔽</button>
                             </div>
-                            <span style="width:45px; font-weight:bold; font-size:13px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
+                            <span style="font-weight:bold; font-size:14px; text-align:left;">${p.name}</span>
                         </div>
-                        <input type="number" id="inpA_${i}" class="match-input" pattern="\\d*" value="${val}">
+                        <span style="font-size:11px; color:#64748b;">(핸디 ${formatHandi(p.handi)})</span>
                     </div>
                 `;
             } else {
-                lA.innerHTML += `<div class="match-row" style="height:34px;"></div>`;
+                lA.innerHTML += `<div class="match-row"></div>`;
             }
 
             if (teamMatchData.teamB[i]) {
                 let p = teamMatchData.teamB[i];
-                let val = tempTeamScores[p.name] || '';
                 lB.innerHTML += `
                     <div class="match-row">
-                        <input type="number" id="inpB_${i}" class="match-input" pattern="\\d*" value="${val}">
-                        <div style="display:flex; align-items:center; gap:2px;">
-                            <span style="width:45px; font-weight:bold; font-size:13px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</span>
-                            <div style="display:flex; flex-direction:column; background:#e2e8f0; border-radius:4px; margin-left:4px;">
+                        <span style="font-size:11px; color:#64748b;">(핸디 ${formatHandi(p.handi)})</span>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <span style="font-weight:bold; font-size:14px; text-align:right;">${p.name}</span>
+                            <div style="display:flex; flex-direction:column; background:#e2e8f0; border-radius:4px; margin-left:2px;">
                                 <button style="${btnStyle}" onclick="movePlayer('B', ${i}, -1)">🔼</button>
                                 <button style="${btnStyle}" onclick="movePlayer('B', ${i}, 1)">🔽</button>
                             </div>
@@ -853,71 +854,121 @@
                     </div>
                 `;
             } else {
-                lB.innerHTML += `<div class="match-row" style="height:34px;"></div>`;
+                lB.innerHTML += `<div class="match-row"></div>`;
             }
         }
 
-        let lI=document.getElementById('indiv_list'); lI.innerHTML='';
+        let lI=document.getElementById('indiv_list_step2'); lI.innerHTML='';
         if(teamMatchData.indiv.length>0) {
-            document.getElementById('indiv_input_section').style.display='block';
-            teamMatchData.indiv.forEach((p,i) => {
-                let val = tempTeamScores[p.name] || '';
-                lI.innerHTML+=`<div class="match-row" style="justify-content:center; gap:15px; margin-bottom:10px;"><span style="width:50px; font-weight:bold; text-align:right;">${p.name}</span><input type="number" id="inpI_${i}" class="match-input" pattern="\\d*" value="${val}"><span style="font-size:11px; color:#64748b; width:50px;">(핸디 ${formatHandi(p.handi)})</span></div>`;
+            document.getElementById('indiv_view_section').style.display='block';
+            teamMatchData.indiv.forEach(p => {
+                lI.innerHTML += `<span style="background:#fff; border:1px solid #cbd5e1; padding:4px 8px; border-radius:4px; font-size:13px; font-weight:bold;">${p.name} <span style="font-size:11px; color:#64748b; font-weight:normal;">(${formatHandi(p.handi)})</span></span>`;
             });
         } else {
-            document.getElementById('indiv_input_section').style.display='none';
+            document.getElementById('indiv_view_section').style.display='none';
         }
+
+        // 날짜 드롭다운
+        const dateSelect = document.getElementById('teamMatchDateSelect');
+        dateSelect.innerHTML = '';
+        const datesDesc = [...new Set(records.map(r => r.date))].sort().reverse();
+        datesDesc.forEach(d => dateSelect.add(new Option(d + " 데이터 가져오기", d)));
     }
 
-    function calculateTeamMatch() {
-        const mode = document.querySelector('input[name="matchMode"]:checked').value;
-        let html='', exp='', d=document.getElementById('teamMatchDate').value.replace(/-/g,'. ')||new Date().toISOString().split('T')[0].replace(/-/g,'. ');
-        let tNetA=0, tNetB=0, pA=0, pB=0, hasEmp=false, max = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
+    // ★ 구글 시트 연동하여 결과 계산
+    async function calculateTeamMatch() {
+        const btn = document.getElementById('btnCalcTeam');
+        btn.innerText = "⏳ 시트 데이터 불러오는 중...";
+        btn.disabled = true;
 
-        html+=`<h4 style="text-align:center; color:#1a365d; margin-top:0;">📊 에이스 1대1 매치 결과</h4><table style="width:100%; background:white; border-radius:8px; font-size:13px; margin-bottom:15px;"><tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;"><th>팀 A (Net)</th><th>승패</th><th>팀 B (Net)</th></tr>`;
+        await fetchDataSilent(); 
+
+        btn.innerText = "🔄 시트 타수 연동하여 결과 보기";
+        btn.disabled = false;
+
+        const targetDate = document.getElementById('teamMatchDateSelect').value;
+        const targetRecords = records.filter(r => r.date === targetDate);
+
+        function getScore(name) {
+            const rec = targetRecords.find(r => r.name === name);
+            return rec ? rec.totalScore : null;
+        }
+
+        let missing = [];
+        teamMatchData.teamA.forEach(p => { if(getScore(p.name) === null) missing.push(p.name); });
+        teamMatchData.teamB.forEach(p => { if(getScore(p.name) === null) missing.push(p.name); });
+        teamMatchData.indiv.forEach(p => { if(getScore(p.name) === null) missing.push(p.name); });
+
+        if(missing.length > 0) {
+            return alert(`[${targetDate}] 시트에 다음 인원의 타수(기록)가 없습니다:\n\n${missing.join(', ')}\n\n구글 시트에 전체 인원의 타수를 입력하신 후 버튼을 다시 눌러주세요.`);
+        }
+
+        const mode = document.querySelector('input[name="matchMode"]:checked').value;
+        let html='';
+        let tNetA=0, tNetB=0, pA=0, pB=0, max = Math.max(teamMatchData.teamA.length, teamMatchData.teamB.length);
+
+        clipboardText = `[⚔️ 2팀 대항전 결과 (${mode==='stroke'?'스트로크':'매치 플레이'})]\n🗓 경기일: ${targetDate}\n\n`;
+
+        let matchupHtml = `<h4 style="text-align:center; color:#1a365d; margin-top:0;">📊 에이스 1대1 매치 결과</h4><table style="width:100%; background:white; border-radius:8px; font-size:13px; margin-bottom:15px;"><tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;"><th>팀 A (Net)</th><th>승패</th><th>팀 B (Net)</th></tr>`;
+        let matchupText = `[1대1 에이스 매치]\n`;
 
         for(let i=0; i<max; i++) {
             let tA=teamMatchData.teamA[i], tB=teamMatchData.teamB[i];
-            let sA=tA?parseInt(document.getElementById(`inpA_${i}`).value):NaN, sB=tB?parseInt(document.getElementById(`inpB_${i}`).value):NaN;
-            if(tA&&isNaN(sA))hasEmp=true; if(tB&&isNaN(sB))hasEmp=true;
-            
+            let sA=tA?getScore(tA.name):null, sB=tB?getScore(tB.name):null;
             let nA=tA?sA-tA.handi:null, nB=tB?sB-tB.handi:null;
-            if(tA) { tNetA+=nA; exp+=`${d}, ${tA.name}, ${sA}, 참여\n`; } 
-            if(tB) { tNetB+=nB; exp+=`${d}, ${tB.name}, ${sB}, 참여\n`; }
+
+            if(tA) tNetA+=nA; 
+            if(tB) tNetB+=nB;
 
             let resA='', resB='', colA='#111', colB='#111';
+            let txtA='', txtB='';
+            
             if(tA&&tB) {
-                if(nA<nB){ resA=mode==='match'?'승(1)':'👑승'; resB=mode==='match'?'패(0)':'패'; pA+=1; colA='#dc2626'; }
-                else if(nB<nA){ resA=mode==='match'?'패(0)':'패'; resB=mode==='match'?'승(1)':'👑승'; pB+=1; colB='#2563eb'; }
-                else { resA=mode==='match'?'무(0.5)':'무'; resB=mode==='match'?'무(0.5)':'무'; pA+=0.5; pB+=0.5; colA='#64748b'; colB='#64748b'; }
-                html+=`<tr><td style="color:${colA};"><strong>${tA.name}</strong> <span style="font-size:11px;">(${nA})</span></td><td style="font-weight:bold;font-size:11px;">${resA} : ${resB}</td><td style="color:${colB};"><strong>${tB.name}</strong> <span style="font-size:11px;">(${nB})</span></td></tr>`;
+                if(nA<nB){ 
+                    resA=mode==='match'?'승(1)':'👑승'; resB=mode==='match'?'패(0)':'패'; pA+=1; colA='#dc2626'; 
+                    txtA='승'; txtB='패';
+                }
+                else if(nB<nA){ 
+                    resA=mode==='match'?'패(0)':'패'; resB=mode==='match'?'승(1)':'👑승'; pB+=1; colB='#2563eb'; 
+                    txtA='패'; txtB='승';
+                }
+                else { 
+                    resA=mode==='match'?'무(0.5)':'무'; resB=mode==='match'?'무(0.5)':'무'; pA+=0.5; pB+=0.5; colA='#64748b'; colB='#64748b'; 
+                    txtA='무'; txtB='무';
+                }
+                matchupHtml+=`<tr><td style="color:${colA};"><strong>${tA.name}</strong> <span style="font-size:11px;">(${nA})</span></td><td style="font-weight:bold;font-size:11px;">${resA} : ${resB}</td><td style="color:${colB};"><strong>${tB.name}</strong> <span style="font-size:11px;">(${nB})</span></td></tr>`;
+                matchupText+=`🔴${tA.name}(${txtA}) vs 🔵${tB.name}(${txtB})\n`;
             } else {
-                if(tA) html+=`<tr><td><strong>${tA.name}</strong> <span style="font-size:11px;">(${nA})</span></td><td style="font-size:11px;color:#94a3b8;">상대없음</td><td>-</td></tr>`;
-                if(tB) html+=`<tr><td>-</td><td style="font-size:11px;color:#94a3b8;">상대없음</td><td><strong>${tB.name}</strong> <span style="font-size:11px;">(${nB})</span></td></tr>`;
+                if(tA) {
+                    matchupHtml+=`<tr><td><strong>${tA.name}</strong> <span style="font-size:11px;">(${nA})</span></td><td style="font-size:11px;color:#94a3b8;">상대없음</td><td>-</td></tr>`;
+                    matchupText+=`🔴${tA.name} vs 상대없음\n`;
+                }
+                if(tB) {
+                    matchupHtml+=`<tr><td>-</td><td style="font-size:11px;color:#94a3b8;">상대없음</td><td><strong>${tB.name}</strong> <span style="font-size:11px;">(${nB})</span></td></tr>`;
+                    matchupText+=`상대없음 vs 🔵${tB.name}\n`;
+                }
             }
         }
-        html+=`</table>`;
-
-        teamMatchData.indiv.forEach((p,i)=>{
-            let sI=parseInt(document.getElementById(`inpI_${i}`).value);
-            if(isNaN(sI))hasEmp=true; else exp+=`${d}, ${p.name}, ${sI}, 참여\n`;
-        });
-
-        if(hasEmp) return alert('모든 타수를 입력해주세요.');
+        matchupHtml+=`</table>`;
 
         let wStr=''; html += `<h4 style="text-align:center; color:#1a365d; border-top:1px dashed #cbd5e1; padding-top:15px;">🌐 최종 경기 결과 (${mode==='stroke'?'스트로크':'매치 플레이'})</h4><div style="display:flex; justify-content:space-around; align-items:center; text-align:center; margin-bottom:10px;">`;
         if(mode==='stroke') {
             let aA = teamMatchData.teamA.length>0?tNetA/teamMatchData.teamA.length:0, aB = teamMatchData.teamB.length>0?tNetB/teamMatchData.teamB.length:0;
             html += `<div><div style="font-weight:bold; color:#dc2626;">팀 A</div><div style="font-size:16px; font-weight:900;">${aA.toFixed(1)} <span style="font-size:11px; font-weight:normal;">(평균Net)</span></div></div><div style="font-size:18px; font-weight:bold;">VS</div><div><div style="font-weight:bold; color:#2563eb;">팀 B</div><div style="font-size:16px; font-weight:900;">${aB.toFixed(1)} <span style="font-size:11px; font-weight:normal;">(평균Net)</span></div></div></div>`;
             wStr = aA<aB ? `<span style="color:#dc2626; font-size:20px;">팀 A 승리! 🏆</span>` : (aB<aA ? `<span style="color:#2563eb; font-size:20px;">팀 B 승리! 🏆</span>` : `<span style="color:#475569; font-size:20px;">무승부! 🤝</span>`);
+            clipboardText += `🔴 팀 A (Net평균 ${aA.toFixed(1)}) VS 🔵 팀 B (Net평균 ${aB.toFixed(1)})\n`;
         } else {
             html += `<div><div style="font-weight:bold; color:#dc2626;">팀 A</div><div style="font-size:16px; font-weight:900;">${pA} 점</div></div><div style="font-size:18px; font-weight:bold;">VS</div><div><div style="font-weight:bold; color:#2563eb;">팀 B</div><div style="font-size:16px; font-weight:900;">${pB} 점</div></div></div>`;
             wStr = pA>pB ? `<span style="color:#dc2626; font-size:20px;">팀 A 승리! 🏆</span>` : (pB>pA ? `<span style="color:#2563eb; font-size:20px;">팀 B 승리! 🏆</span>` : `<span style="color:#475569; font-size:20px;">무승부! 🤝</span>`);
+            clipboardText += `🔴 팀 A (${pA}점) VS 🔵 팀 B (${pB}점)\n`;
         }
-        html += `<div style="text-align:center; margin-top:15px; font-weight:bold;">${wStr}</div>`;
+        
+        let wStrText = mode==='stroke' ? (tNetA/teamMatchData.teamA.length<tNetB/teamMatchData.teamB.length ? "팀 A 승리! 🏆" : (tNetB/teamMatchData.teamB.length<tNetA/teamMatchData.teamA.length ? "팀 B 승리! 🏆" : "무승부! 🤝")) : (pA>pB ? "팀 A 승리! 🏆" : (pB>pA ? "팀 B 승리! 🏆" : "무승부! 🤝"));
+        clipboardText += `🎉 결과: ${wStrText}\n\n` + matchupText;
+
+        html += `<div style="text-align:center; margin-top:15px; font-weight:bold;">${wStr}</div>` + matchupHtml;
 
         document.getElementById('teamResultContent').innerHTML = html;
-        document.getElementById('sheetExportData').innerText = exp;
         document.getElementById('team_step2').style.display='none'; document.getElementById('team_step3').style.display='block';
     }
 
