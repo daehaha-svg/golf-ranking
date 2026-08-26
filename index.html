@@ -93,17 +93,26 @@
     <!-- [모드 1] 랭킹 & 상금전 -->
     <!-- ========================================== -->
     <div id="viewMain" class="view-section">
+        
+        <!-- 상금전 토글 버튼 -->
+        <button id="btnTogglePrize" class="btn-action" style="background-color:#d97706; margin-top:0; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(217,119,6,0.2);" onclick="togglePrizeSection()">💰 날짜별 상금전 결과 보기</button>
+
         <div class="card prize-card" id="prizeSection" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0;">💰 최근 상금전 결과</h3>
-                <select id="feeSelect" style="width: auto; padding: 5px; font-size: 12px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;" onchange="updateFee()">
-                    <option value="5000">참가비 5천원</option>
-                    <option value="10000" selected>참가비 1만원</option>
-                    <option value="15000">참가비 1.5만원</option>
-                    <option value="20000">참가비 2만원</option>
-                </select>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0;">💰 상금전 결과</h3>
+                <div style="display: flex; gap: 10px;">
+                    <!-- 날짜/회차 드롭다운 -->
+                    <select id="prizeDateSelect" onchange="renderPrizeMatch()" style="flex: 2; padding: 8px; font-size: 13px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;"></select>
+                    <select id="feeSelect" onchange="renderPrizeMatch()" style="flex: 1; padding: 8px; font-size: 13px; border-radius: 6px; border: 1px solid #d97706; background-color: #fffbeb; color: #92400e; font-weight: bold;">
+                        <option value="5000">5천원</option>
+                        <option value="10000" selected>1만원</option>
+                        <option value="15000">1.5만원</option>
+                        <option value="20000">2만원</option>
+                    </select>
+                </div>
             </div>
-            <div id="prizeDateStr" style="text-align: left; color: #92400e; font-size: 13px; margin-top: 5px; margin-bottom: 15px;"></div>
+            
+            <div id="prizeDateStr" style="text-align: left; color: #92400e; font-size: 13px; margin-top: 5px; margin-bottom: 15px; font-weight:bold;"></div>
             <div id="prizeWinners"></div>
             <div id="mostImproved" class="improved-box"></div>
         </div>
@@ -297,11 +306,9 @@
 
     let records = [];
     let globalStats = {};
-    let selectedFee = null; 
     let teamMatchData = { teamA: [], teamB: [], indiv: [] }; 
     let clipboardText = ""; 
     
-    // ★ 자동 선택을 위한 시트 최신 명단 저장
     let sheetEntries = [];
     let latestSheetPlayers = [];
 
@@ -366,7 +373,40 @@
         if(document.getElementById(`${type}_step3`)) document.getElementById(`${type}_step3`).style.display = 'none';
     }
 
-    // ★ 구글 시트에 입력된 최신 멤버를 기본적으로 "선택됨(파란색)" 처리
+    function togglePrizeSection() {
+        const sec = document.getElementById('prizeSection');
+        const btn = document.getElementById('btnTogglePrize');
+        if(sec.style.display === 'none') {
+            sec.style.display = 'block';
+            btn.innerHTML = '닫기 ❌';
+            btn.style.backgroundColor = '#64748b';
+            renderPrizeMatch(); 
+        } else {
+            sec.style.display = 'none';
+            btn.innerHTML = '💰 날짜별 상금전 결과 보기';
+            btn.style.backgroundColor = '#d97706';
+        }
+    }
+
+    // ★ 오름차순으로 회차를 계산하여 드롭다운 메뉴 채우기
+    function updatePrizeDateDropdown() {
+        const select = document.getElementById('prizeDateSelect');
+        select.innerHTML = '';
+        
+        // 1. 오름차순으로 전체 유니크 날짜 추출 (가장 옛날이 1회)
+        const datesAsc = [...new Set(records.map(r => r.date))].sort();
+        
+        // 2. 최신 날짜가 메뉴 맨 위에 오도록 내림차순 배열 생성
+        const datesDesc = [...datesAsc].reverse();
+        
+        // 3. 드롭다운에 옵션 추가
+        datesDesc.forEach(d => {
+            // 오름차순 배열에서의 인덱스 + 1이 회차가 됨
+            const roundNum = datesAsc.indexOf(d) + 1;
+            select.add(new Option(`[${roundNum}회] ${d} 결과보기`, d));
+        });
+    }
+
     function initPlayerSelect(containerId) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
@@ -392,10 +432,7 @@
             const span = document.createElement('span');
             span.className = 'player-checkbox';
             
-            // 시트 최신 명단에 있으면 파란색으로 자동 선택
-            if (latestSheetPlayers.includes(name)) {
-                span.classList.add('selected');
-            }
+            if (latestSheetPlayers.includes(name)) span.classList.add('selected');
             
             span.innerHTML = `${name} <span style="font-size:11px; font-weight:normal;">(${formatHandi(globalStats[name].handicap)})</span>`;
             span.onclick = function() { this.classList.toggle('selected'); };
@@ -422,7 +459,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // [모드 1] 상금전 기본 로직 (파싱, 통계, 렌더링)
+    // [모드 1] 상금전 기본 로직
     // ---------------------------------------------------------------------
     async function fetchData() {
         try {
@@ -434,7 +471,7 @@
             document.getElementById('rankingTable').style.display = 'table';
             
             processStats();
-            renderPrizeMatch();
+            updatePrizeDateDropdown();
             renderRanking();
             updateNameDropdown();
             
@@ -448,7 +485,7 @@
     function parseCSV(csvText) {
         const lines = csvText.split(/\r?\n/);
         records = [];
-        sheetEntries = []; // 자동 선택을 위한 기록
+        sheetEntries = []; 
         if (lines.length < 2) return;
         
         const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
@@ -462,7 +499,6 @@
             if (!line) continue;
             
             const cols = line.split(',');
-            // 타수가 비어있어도(이름만 적혀있어도) 읽어올 수 있도록 검사 완화
             if (cols.length > Math.max(dateIdx, nameIdx)) {
                 let date = cols[dateIdx]?.trim();
                 let name = cols[nameIdx]?.trim();
@@ -476,10 +512,8 @@
                         }
                     }
                     
-                    // 스코어 유무 상관없이 시트에 적힌 이름 모두 수집 (자동 선택 기능용)
                     sheetEntries.push({ date: cleanDate, name: name });
 
-                    // 랭킹 기록은 타수가 제대로 적혀있는 사람만 수집
                     if (scoreIdx !== -1 && cols[scoreIdx]) {
                         let rawScoreStr = cols[scoreIdx].trim().replace(/[^0-9\-]/g, '');
                         if(rawScoreStr !== '') {
@@ -504,7 +538,6 @@
         }
         records.sort((a, b) => a.date.localeCompare(b.date));
 
-        // 시트에 적힌 가장 최근 날짜의 인원들을 추출 (자동 선택용)
         if (sheetEntries.length > 0) {
             sheetEntries.sort((a, b) => a.date.localeCompare(b.date));
             const latestDate = sheetEntries[sheetEntries.length - 1].date;
@@ -516,9 +549,7 @@
         globalStats = {};
         const players = [...new Set(records.map(r => r.name))];
         
-        // 타수는 없지만 시트에 이름이 미리 적혀있는 신규 멤버도 리스트에 추가
         latestSheetPlayers.forEach(n => { if(!players.includes(n)) players.push(n); });
-        
         Object.keys(MANUAL_AWARDS).forEach(n => { if(!players.includes(n)) players.push(n); });
         Object.keys(MANUAL_HANDICAPS).forEach(n => { if(!players.includes(n)) players.push(n); });
 
@@ -589,28 +620,75 @@
 
     function renderPrizeMatch() {
         if (records.length === 0) return;
-        const dates = [...new Set(records.map(r => r.date))];
-        const latestDate = dates[dates.length - 1]; 
-        const latestRecords = records.filter(r => r.date === latestDate);
-        
-        let matchFee = selectedFee !== null ? selectedFee : (latestRecords.length > 0 ? Math.max(...latestRecords.map(r => r.fee)) : 5000);
-        let fd = document.getElementById('feeSelect'); if(fd && [5000,10000,15000,20000].includes(matchFee)) fd.value=matchFee;
+        const datesAsc = [...new Set(records.map(r => r.date))].sort();
+        let selectedDate = document.getElementById('prizeDateSelect').value;
+        if(!selectedDate) {
+            selectedDate = datesAsc[datesAsc.length - 1];
+            if(document.getElementById('prizeDateSelect')) document.getElementById('prizeDateSelect').value = selectedDate;
+        }
 
-        const pResults = latestRecords.filter(r=>r.prizeJoin==='참여').map(r => {
-            return { ...r, handi: globalStats[r.name].handicap, netScore: r.totalScore - globalStats[r.name].handicap };
-        }).sort((a, b) => a.netScore - b.netScore);
+        const targetRecords = records.filter(r => r.date === selectedDate);
+        if(targetRecords.length === 0) {
+            document.getElementById('prizeWinners').innerHTML = `<div style="text-align:center; padding:10px; color:#6b7280;">기록이 없습니다.</div>`;
+            document.getElementById('mostImproved').style.display = 'none';
+            return;
+        }
+
+        let matchFee = parseInt(document.getElementById('feeSelect').value) || 10000;
+        const pastRecords = records.filter(r => r.date < selectedDate);
+
+        const pResults = targetRecords.filter(r=>r.prizeJoin==='참여').map(r => {
+            const userPast = pastRecords.filter(p => p.name === r.name);
+            let handi = 0;
+            if (userPast.length > 0) {
+                const pastAvg = Math.round(userPast.reduce((sum, p) => sum + p.totalScore, 0) / userPast.length);
+                handi = Math.round((pastAvg - 72) * 0.7);
+            } else if (MANUAL_HANDICAPS[r.name] !== undefined) {
+                handi = MANUAL_HANDICAPS[r.name];
+            }
+            return { ...r, handi, netScore: r.totalScore - handi, count: userPast.length + 1 };
+        }).sort((a, b) => {
+            if(a.netScore === b.netScore) return b.count - a.count;
+            return a.netScore - b.netScore;
+        });
 
         let pz = calculatePrizes(pResults.length, matchFee);
-        document.getElementById('prizeSection').style.display = 'block';
-        document.getElementById('prizeDateStr').innerText = `(${latestDate} 경기)`;
+
+        let improvedCandidates = [];
+        targetRecords.filter(r => r.prizeJoin === '참여').forEach(r => {
+            const userPast = pastRecords.filter(p => p.name === r.name);
+            if (userPast.length >= 1) {
+                const prev = userPast[userPast.length - 1].totalScore;
+                const curr = r.totalScore;
+                if (prev - curr > 0) improvedCandidates.push({ name: r.name, diff: prev - curr, prev: prev, curr: curr });
+            }
+        });
+        improvedCandidates.sort((a, b) => b.diff - a.diff);
+        let effortWinner = improvedCandidates.length > 0 ? improvedCandidates[0] : null;
+
+        // ★ 날짜 문자열에 회차 표시
+        const roundNum = datesAsc.indexOf(selectedDate) + 1;
+        document.getElementById('prizeDateStr').innerText = `([${roundNum}회] ${selectedDate} 경기)`;
 
         let wDiv = document.getElementById('prizeWinners');
-        wDiv.innerHTML = pResults.length > 0 ? `<div style="text-align:center; margin-bottom:12px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">참가: ${pResults.length}명 / 상금: ${pz.total.toLocaleString()}원</div>` : '';
+        wDiv.innerHTML = pResults.length > 0 ? `<div style="text-align:center; margin-bottom:12px; font-weight:bold; color:#d97706; background-color:#fef3c7; padding:8px; border-radius:8px;">상금전 참가: ${pResults.length}명 / 총 상금: ${pz.total.toLocaleString()}원</div>` : `<div style="text-align:center; padding:10px; color:#6b7280;">상금전 참여자가 없습니다.</div>`;
         
         pResults.forEach((p, i) => {
             let pm = i===0?pz.p1:(i===1?pz.p2:(i===2?pz.p3:0));
             wDiv.innerHTML += `<div class="prize-item"><div class="prize-rank">${getRankBadge(i)}</div><div class="prize-name">${p.name} ${pm>0?`<span style="color:#e53e3e;font-size:13px;">💰${pm.toLocaleString()}원</span>`:''}</div><div class="prize-score"><div class="prize-net">${p.netScore}타</div><div class="prize-detail">${p.totalScore}타(${formatOverPar(p.overPar)})-핸디(${formatHandi(p.handi)})</div></div></div>`;
         });
+
+        const impDiv = document.getElementById('mostImproved');
+        impDiv.style.display = 'block';
+        if (improvedCandidates.length > 0) {
+            let listHtml = `<div style="font-size: 14px; font-weight: bold; color: #1e40af; margin-bottom: 8px; border-bottom: 1px solid #bfdbfe; padding-bottom: 5px;">🔥 단축 기록 (TOP 4)</div>`;
+            improvedCandidates.slice(0, 4).forEach((c, idx) => {
+                listHtml += `<div style="text-align: left; margin-bottom: 6px; font-size: 13px;"><span style="display:inline-block; width:18px; font-weight:bold; color:#2b6cb0;">${idx + 1}.</span> <span style="color: #333; font-weight:bold;">${c.name} <span style="color:#ef4444;">(-${c.diff}타)</span></span> <span style="font-size: 11px; color: #6b7280;">(${c.prev}➔${c.curr})</span> ${(effortWinner && c.name === effortWinner.name) ? `<span style="color:#e53e3e; font-weight:bold; font-size:12px;">[🏆 단축왕]</span>` : ''}</div>`;
+            });
+            impDiv.innerHTML = listHtml;
+        } else {
+            impDiv.innerHTML = `<div style="font-size: 14px; font-weight: bold; color: #1e40af; margin-bottom: 8px;">🔥 단축 기록</div><span style="color: #6b7280; font-size: 13px;">기록을 단축한 멤버가 없습니다 🥲</span>`;
+        }
     }
 
     function renderRanking() {
