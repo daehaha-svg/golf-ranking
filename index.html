@@ -34,19 +34,19 @@
         .prize-detail { color: #333; font-size: 12px; margin-top: 4px; line-height: 1.4; }
         .improved-box { margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe; text-align: center; }
 
-        /* 탭 UI 스타일 */
+        /* 탭 UI 스타일 (4구역) */
         .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
         .tab-btn { flex: 1 1 45%; padding: 12px 5px; border: none; border-radius: 8px; background: #e2e8f0; font-weight: bold; font-size: 14px; cursor: pointer; color: #475569; transition: all 0.2s; }
         .tab-btn.active { background: #1e3a8a; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* 공통 플레이어 선택 */
+        /* 공통 플레이어 선택 체크박스 */
         .player-checkbox { display: inline-block; padding: 8px 12px; margin: 4px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 14px; cursor: pointer; transition: 0.2s; }
         .player-checkbox.selected { background: #3b82f6; color: white; border-color: #2563eb; font-weight: bold; }
         .btn-action { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 6px rgba(37,99,235,0.2); }
         .btn-action:active { background: #1d4ed8; }
         .btn-kakao { background-color: #FEE500; color: #000000; margin-top: 15px; box-shadow: 0 4px 6px rgba(254,229,0,0.3); }
         
-        /* 팀전 보드 */
+        /* 팀전/배정 보드 스타일 */
         .team-board { display: flex; gap: 10px; margin-top: 15px; }
         .team-col { flex: 1; background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; }
         .team-title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #cbd5e1; }
@@ -71,7 +71,7 @@
         .mode-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; margin-top: 8px; }
         .mode-label input[type="radio"] { width: 16px; height: 16px; cursor: pointer; margin:0; }
         
-        /* 방 배정 결과 */
+        /* 방 배정 결과 스타일 */
         .room-box { background-color: #ebf8ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 15px; margin-bottom: 15px; }
         .room-title { font-weight: 900; color: #2b6cb0; margin-bottom: 8px; font-size: 16px; border-bottom: 1px dashed #90cdf4; padding-bottom: 8px; }
         .room-members { font-weight: bold; color: #1a365d; font-size: 15px; line-height: 1.5; }
@@ -199,12 +199,11 @@
                     <label class="mode-label"><input type="radio" name="matchMode" value="match"> <b>매치 플레이:</b> 1대1 에이스전 승점 합산 승부</label>
                 </div>
 
-                <!-- ★ 라인업 랜덤 섞기 버튼 -->
+                <!-- ★ 라인업 랜덤 섞기 버튼 추가 -->
                 <div style="text-align:center; margin-bottom:10px;">
                     <button onclick="shuffleMatchups()" style="padding:8px 16px; background:#f59e0b; color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(245,158,11,0.2);">🎲 1대1 대진표 랜덤 섞기</button>
                 </div>
                 
-                <!-- ★ 대진표 리스트 박스 -->
                 <div class="team-board">
                     <div class="team-col">
                         <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
@@ -311,7 +310,7 @@
     let records = [];
     let globalStats = {};
     let teamMatchData = { teamA: [], teamB: [], indiv: [] }; 
-    let tempTeamScores = {}; // 팀 배정 변경 시 타수 보존용
+    let tempTeamScores = {}; // ★ 매치업 순서 변경 시 타수 보존용
     let clipboardText = ""; 
     
     let sheetEntries = [];
@@ -393,19 +392,13 @@
         }
     }
 
-    // ★ 상금전(참여) 기록이 있는 날짜만 필터링하여 회차 계산
     function updatePrizeDateDropdown() {
         const select = document.getElementById('prizeDateSelect');
         select.innerHTML = '';
-        
-        // 1. 상금전에 실제 참여한 사람이 최소 1명이라도 있는 날짜만 추출 (오름차순 정렬)
         const prizeRecords = records.filter(r => r.prizeJoin === '참여');
         const prizeDatesAsc = [...new Set(prizeRecords.map(r => r.date))].sort();
-        
-        // 2. 드롭다운에는 최신 날짜가 위에 오도록 내림차순 정렬
         const prizeDatesDesc = [...prizeDatesAsc].reverse();
         
-        // 3. 드롭다운 옵션 추가 (인덱스+1 = 회차)
         prizeDatesDesc.forEach(d => {
             const roundNum = prizeDatesAsc.indexOf(d) + 1;
             select.add(new Option(`[${roundNum}회] ${d} 결과보기`, d));
@@ -626,14 +619,13 @@
     function renderPrizeMatch() {
         if (records.length === 0) return;
         
-        // 1. 상금전에 참여한 기록만 추출하여 오름차순으로 기준 배열 생성
         const prizeRecords = records.filter(r => r.prizeJoin === '참여');
         const prizeDatesAsc = [...new Set(prizeRecords.map(r => r.date))].sort();
         
         let selectedDate = document.getElementById('prizeDateSelect').value;
         if(!selectedDate) {
             if(prizeDatesAsc.length > 0) {
-                selectedDate = prizeDatesAsc[prizeDatesAsc.length - 1]; // 가장 최신
+                selectedDate = prizeDatesAsc[prizeDatesAsc.length - 1]; 
                 if(document.getElementById('prizeDateSelect')) document.getElementById('prizeDateSelect').value = selectedDate;
             } else {
                 document.getElementById('prizeWinners').innerHTML = `<div style="text-align:center; padding:10px; color:#6b7280;">상금전 기록이 없습니다.</div>`;
@@ -675,7 +667,6 @@
         improvedCandidates.sort((a, b) => b.diff - a.diff);
         let effortWinner = improvedCandidates.length > 0 ? improvedCandidates[0] : null;
 
-        // ★ 날짜 문자열에 정확한 회차 표시 (상금전 참여 기준)
         const roundNum = prizeDatesAsc.indexOf(selectedDate) + 1;
         const roundStr = roundNum > 0 ? `[${roundNum}회] ` : '';
         document.getElementById('prizeDateStr').innerText = `(${roundStr}${selectedDate} 경기)`;
@@ -726,7 +717,7 @@
 
 
     // =====================================================================
-    // [모드 2] 팀전 (1대1 매치플레이, 라인업 수동조정 및 랜덤 섞기)
+    // [모드 2] 팀전 (1대1 매치플레이, 대진표 조정 및 랜덤)
     // =====================================================================
     function generateTeams() {
         let players = getSelectedPlayers('teamPlayerSelect');
@@ -773,7 +764,8 @@
 
     function confirmTeams() {
         if(teamMatchData.teamA.length === 0 && teamMatchData.teamB.length === 0) return alert('모두 깍두기일 수는 없습니다. 팀을 배정해주세요.');
-        // 초기에는 핸디캡 오름차순(에이스 대결)으로 정렬
+        
+        // 초기에는 핸디캡 오름차순(에이스 순)으로 정렬
         teamMatchData.teamA.sort((a,b)=>a.handi-b.handi); 
         teamMatchData.teamB.sort((a,b)=>a.handi-b.handi); 
         teamMatchData.indiv.sort((a,b)=>a.handi-b.handi);
@@ -781,11 +773,11 @@
         document.getElementById('team_step1_5').style.display='none'; 
         document.getElementById('team_step2').style.display='block';
         
-        tempTeamScores = {}; // 팀 편성 초기화 시 타수 저장소도 초기화
+        tempTeamScores = {}; // 초기화
         renderStep2Board();
     }
 
-    // ★ 입력된 타수를 보존하는 함수
+    // ★ 대진표 조정 시 입력해둔 타수가 날아가지 않도록 보존
     function saveTeamScores() {
         tempTeamScores = {};
         teamMatchData.teamA.forEach((p, i) => { let el = document.getElementById(`inpA_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
@@ -793,10 +785,10 @@
         teamMatchData.indiv.forEach((p, i) => { let el = document.getElementById(`inpI_${i}`); if(p && el && el.value) tempTeamScores[p.name] = el.value; });
     }
 
-    // ★ 대진표 순서 위아래 이동 함수
+    // ★ 대진표 순서 위아래 이동
     function movePlayer(team, index, dir) {
         let arr = team === 'A' ? teamMatchData.teamA : teamMatchData.teamB;
-        if (index + dir < 0 || index + dir >= arr.length) return; // 범위를 벗어나면 무시
+        if (index + dir < 0 || index + dir >= arr.length) return; 
         
         saveTeamScores();
         let temp = arr[index];
@@ -806,7 +798,7 @@
         renderStep2Board();
     }
 
-    // ★ 대진표 랜덤 섞기 함수
+    // ★ 대진표 랜덤 섞기
     function shuffleMatchups() {
         saveTeamScores();
         teamMatchData.teamA.sort(() => Math.random() - 0.5);
@@ -814,7 +806,7 @@
         renderStep2Board();
     }
 
-    // ★ 스코어 입력 화면 (Step 2) 렌더링
+    // ★ 스코어 입력 보드 렌더링 (대진표 조정 버튼 포함)
     function renderStep2Board() {
         document.getElementById('teamA_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamA.reduce((s,p)=>s+p.handi,0))}`;
         document.getElementById('teamB_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamB.reduce((s,p)=>s+p.handi,0))}`;
