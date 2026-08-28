@@ -47,8 +47,8 @@
         .btn-kakao { background-color: #FEE500; color: #000000; margin-top: 15px; box-shadow: 0 4px 6px rgba(254,229,0,0.3); }
         
         /* 팀전/배정 보드 스타일 */
-        .team-board { display: flex; gap: 10px; margin-top: 15px; }
-        .team-col { flex: 1; background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; }
+        .team-board { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .team-col { flex: 1; min-width: 45%; background: #f8fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; box-sizing: border-box; }
         .team-title { text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 2px solid #cbd5e1; }
         .team-a-title { color: #dc2626; border-color: #fca5a5; }
         .team-b-title { color: #2563eb; border-color: #93c5fd; }
@@ -59,10 +59,13 @@
         .player-tag.team-a { border-left: 4px solid #ef4444; color: #991b1b; }
         .player-tag.team-b { border-left: 4px solid #3b82f6; color: #1e3a8a; }
         .player-tag.indiv { border-left: 4px solid #64748b; color: #334155; }
+        .player-tag.room { border-left: 4px solid #059669; color: #064e3b; } /* 방전용 태그색 */
 
         .match-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px; min-height: 34px; }
+        .match-input { width: 50px; padding: 6px; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; }
         .vs-badge { background: #475569; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
         .result-box { margin-top: 20px; padding: 15px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; }
+        .sheet-export { margin-top: 15px; padding: 10px; background: #1e293b; color: #a5f3fc; border-radius: 8px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-break: keep-all; line-height: 1.4; }
         
         /* 모드 선택 라디오 버튼 */
         .mode-selector { margin-bottom: 15px; padding: 12px; background: #e0e7ff; border-radius: 8px; border: 1px solid #c7d2fe; }
@@ -111,7 +114,6 @@
             <div id="prizeWinners"></div>
             <div id="mostImproved" class="improved-box"></div>
             
-            <!-- ★ 상금전 카톡 복사 버튼 추가 -->
             <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 결과 복사하기</button>
         </div>
 
@@ -187,11 +189,10 @@
                 <button class="btn-action" onclick="confirmTeams()" style="background-color: #4f46e5; margin-top: 15px;">이대로 대진표 확정하기</button>
             </div>
 
-            <!-- ★ 스코어 입력창이 완전히 사라지고, 대진표 확인 및 시트 연동 버튼만 남은 Step 2 -->
             <div id="team_step2" style="display: none;">
                 <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span>3. 대진표 조정 및 룰 선택</span>
-                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 다시짜기</button>
+                    <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 수정</button>
                 </p>
                 
                 <div class="mode-selector">
@@ -204,7 +205,7 @@
                     <button onclick="shuffleMatchups()" style="padding:8px 16px; background:#f59e0b; color:white; border:none; border-radius:6px; font-weight:bold; font-size:13px; cursor:pointer; box-shadow:0 2px 4px rgba(245,158,11,0.2);">🎲 1대1 대진표 랜덤 섞기</button>
                 </div>
                 
-                <div class="team-board">
+                <div class="team-board" style="flex-wrap: nowrap;">
                     <div class="team-col">
                         <div class="team-title team-a-title">🔴 팀 A<br><span id="teamA_handiSum" style="font-size:11px; font-weight:normal;"></span></div>
                         <div id="teamA_list_step2"></div>
@@ -234,6 +235,10 @@
             </div>
 
             <div id="team_step3" style="display: none;">
+                <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span>4. 매치 결과</span>
+                    <button onclick="document.getElementById('team_step3').style.display='none'; document.getElementById('team_step2').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">이전 화면</button>
+                </p>
                 <div class="result-box" id="teamResultContent"></div>
                 <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 결과 복사하기</button>
                 <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('team')">팀 다시짜기</button>
@@ -242,12 +247,12 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- [모드 3] 방전 -->
+    <!-- [모드 3] 방전 (수동 이동 기능 추가) -->
     <!-- ========================================== -->
     <div id="viewRoom" class="view-section" style="display: none;">
         <div class="card">
             <h3 style="margin-bottom:5px;">🚪 방전 (네트워크 플레이)</h3>
-            <p style="text-align:center; font-size:12px; color:#64748b; margin-top:0; margin-bottom:20px;">각 방의 평균 핸디캡이 동일해지도록 인원을 자동 배정합니다.</p>
+            <p style="text-align:center; font-size:12px; color:#64748b; margin-top:0; margin-bottom:20px;">각 방의 평균 핸디캡이 동일해지도록 인원을 배정합니다.</p>
             
             <div id="room_step1">
                 <p style="font-size: 14px; font-weight: bold; color: #475569;">1. 오늘 경기 참가자 확인</p>
@@ -256,14 +261,30 @@
                 <p style="font-size: 14px; font-weight: bold; color: #475569; margin-top:20px;">2. 배정할 방 개수</p>
                 <input type="number" id="roomCount" value="2" min="2" max="10" style="width:80px; text-align:center; margin-bottom:15px;"> 개
                 
-                <button class="btn-action" onclick="generateRooms()">균등 방 배정 실행</button>
+                <button class="btn-action" onclick="generateRooms()">방 자동 배정 및 수정하기</button>
+            </div>
+
+            <!-- ★ 방전 수동 편성 UI 추가 -->
+            <div id="room_step1_5" style="display: none;">
+                <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between;">
+                    <span>2. 방 수동 편성 (이름 터치 시 이동)</span>
+                    <button onclick="resetView('room')" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">인원 다시선택</button>
+                </p>
+                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* 멤버를 터치하면 <b>다음 방 번호</b>로 이동합니다.</p>
+                
+                <div id="roomBuilderBoard" class="team-board"></div>
+
+                <button class="btn-action" onclick="confirmRooms()" style="background-color: #4f46e5; margin-top: 15px;">이대로 방 배정 확정</button>
             </div>
 
             <div id="room_step2" style="display: none;">
-                <h4 style="color:#1a365d; margin-bottom:15px;">🎉 방 배정 완료!</h4>
+                <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between;">
+                    <span>3. 배정 결과</span>
+                    <button onclick="document.getElementById('room_step2').style.display='none'; document.getElementById('room_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">방 수정하기</button>
+                </p>
                 <div id="roomResultBox"></div>
                 <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 결과 복사하기</button>
-                <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('room')">다시 배정하기</button>
+                <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('room')">인원 다시선택</button>
             </div>
         </div>
     </div>
@@ -287,10 +308,12 @@
             </div>
 
             <div id="rival_step2" style="display: none;">
-                <h4 style="color:#ea580c; margin-bottom:15px;">🔥 라이벌 대진표 완성!</h4>
+                <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between;">
+                    <span>3. 매칭 결과</span>
+                    <button onclick="resetView('rival')" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">인원 다시선택</button>
+                </p>
                 <div id="rivalResultBox"></div>
                 <button class="btn-action btn-kakao" onclick="copyToKakao()">💬 카톡으로 대진표 복사하기</button>
-                <button class="btn-secondary" style="width:100%; padding:14px; border-radius:8px; border:none; font-weight:bold; margin-top:10px; cursor:pointer;" onclick="resetView('rival')">다시 배정하기</button>
             </div>
         </div>
     </div>
@@ -313,6 +336,7 @@
     let records = [];
     let globalStats = {};
     let teamMatchData = { teamA: [], teamB: [], indiv: [] }; 
+    let roomMatchData = []; // 방전 데이터 저장소
     let clipboardText = ""; 
     
     let sheetEntries = [];
@@ -459,7 +483,7 @@
     }
 
     // ---------------------------------------------------------------------
-    // [데이터 불러오기 및 통계 처리]
+    // [모드 1] 상금전 및 데이터 불러오기 로직
     // ---------------------------------------------------------------------
     async function fetchDataSilent() {
         try {
@@ -678,7 +702,6 @@
         const roundStr = roundNum > 0 ? `[${roundNum}회] ` : '';
         document.getElementById('prizeDateStr').innerText = `(${roundStr}${selectedDate} 경기)`;
 
-        // ★ 카톡 복사용 텍스트 생성
         clipboardText = `[💰 ${roundStr}${selectedDate} 상금전 결과]\n\n`;
 
         let wDiv = document.getElementById('prizeWinners');
@@ -731,7 +754,7 @@
 
 
     // =====================================================================
-    // [모드 2] 팀전 대항전 (수동/랜덤 대진표, 시트 연동)
+    // [모드 2] 팀전 대항전 (수동/랜덤 대진표, 시트 연동 전용)
     // =====================================================================
     function generateTeams() {
         let players = getSelectedPlayers('teamPlayerSelect');
@@ -779,7 +802,6 @@
     function confirmTeams() {
         if(teamMatchData.teamA.length === 0 && teamMatchData.teamB.length === 0) return alert('모두 깍두기일 수는 없습니다. 팀을 배정해주세요.');
         
-        // 초기에는 핸디캡 오름차순(에이스 순)으로 정렬
         teamMatchData.teamA.sort((a,b)=>a.handi-b.handi); 
         teamMatchData.teamB.sort((a,b)=>a.handi-b.handi); 
         teamMatchData.indiv.sort((a,b)=>a.handi-b.handi);
@@ -790,7 +812,6 @@
         renderStep2Board();
     }
 
-    // ★ 대진표 순서 위아래 이동
     function movePlayer(team, index, dir) {
         let arr = team === 'A' ? teamMatchData.teamA : teamMatchData.teamB;
         if (index + dir < 0 || index + dir >= arr.length) return; 
@@ -802,14 +823,12 @@
         renderStep2Board();
     }
 
-    // ★ 대진표 랜덤 섞기
     function shuffleMatchups() {
         teamMatchData.teamA.sort(() => Math.random() - 0.5);
         teamMatchData.teamB.sort(() => Math.random() - 0.5);
         renderStep2Board();
     }
 
-    // ★ 시트 데이터에서 가져온 날짜 드롭다운 세팅
     function renderStep2Board() {
         document.getElementById('teamA_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamA.reduce((s,p)=>s+p.handi,0))}`;
         document.getElementById('teamB_handiSum').innerHTML = `핸디 합: ${formatHandi(teamMatchData.teamB.reduce((s,p)=>s+p.handi,0))}`;
@@ -868,14 +887,12 @@
             document.getElementById('indiv_view_section').style.display='none';
         }
 
-        // 날짜 드롭다운
         const dateSelect = document.getElementById('teamMatchDateSelect');
         dateSelect.innerHTML = '';
         const datesDesc = [...new Set(records.map(r => r.date))].sort().reverse();
         datesDesc.forEach(d => dateSelect.add(new Option(d + " 데이터 가져오기", d)));
     }
 
-    // ★ 구글 시트 연동하여 결과 계산
     async function calculateTeamMatch() {
         const btn = document.getElementById('btnCalcTeam');
         btn.innerText = "⏳ 시트 데이터 불러오는 중...";
@@ -973,7 +990,7 @@
     }
 
     // =====================================================================
-    // [모드 3] 방전 (네트워크 방전 - 균등 핸디 배정)
+    // [모드 3] 방전 (수동 밸런싱 포함)
     // =====================================================================
     function generateRooms() {
         let players = getSelectedPlayers('roomPlayerSelect');
@@ -981,24 +998,77 @@
         if(players.length < rCount) return alert('참가자가 방 개수보다 적습니다.');
 
         players.sort((a,b) => b.handi - a.handi);
-        let rooms = Array.from({length: rCount}, (_, i)=>({ id: i+1, name: `${i+1}번 방`, players: [], sum: 0 }));
+        roomMatchData = Array.from({length: rCount}, (_, i)=>({ id: i+1, name: `${i+1}번 방`, players: [], sum: 0 }));
 
         players.forEach(p => {
-            rooms.sort((a,b) => a.sum - b.sum); 
-            rooms[0].players.push(p);
-            rooms[0].sum += p.handi;
+            roomMatchData.sort((a,b) => a.sum - b.sum); 
+            roomMatchData[0].players.push(p);
+            roomMatchData[0].sum += p.handi;
         });
+        
+        roomMatchData.sort((a,b) => a.id - b.id);
 
-        let html = ''; clipboardText = "[🌐 네트워크 방전 배정 결과]\n(각 방의 평균 핸디가 비슷하도록 배정)\n\n";
-        rooms.sort((a,b)=>a.id-b.id).forEach(r => {
+        document.getElementById('room_step1').style.display='none'; 
+        document.getElementById('room_step1_5').style.display='block';
+        renderRoomBuilder();
+    }
+
+    function renderRoomBuilder() {
+        const board = document.getElementById('roomBuilderBoard');
+        board.innerHTML = '';
+        
+        roomMatchData.forEach((r) => {
+            let sum = r.players.reduce((s, p) => s + p.handi, 0);
+            r.sum = sum;
+            
+            let html = `<div class="team-col" style="min-width: 45%; margin-bottom:10px;">
+                <div class="team-title" style="color: #2b6cb0; border-color: #90cdf4;">🚪 ${r.name}<br><span style="font-size:11px; font-weight:normal; color:#64748b;">핸디 합: ${formatHandi(sum)}</span></div>
+                <div style="min-height: 50px; background: #e2e8f0; padding: 6px; border-radius: 6px; display:flex; flex-direction:column; gap:5px;">`;
+            
+            r.players.forEach(p => {
+                html += `<div class="player-tag room" style="margin:0;" onclick="toggleRoomPlayer('${p.name}')">${p.name} <span style="font-size:11px;">(${formatHandi(p.handi)})</span></div>`;
+            });
+            
+            html += `</div></div>`;
+            board.innerHTML += html;
+        });
+    }
+
+    function toggleRoomPlayer(playerName) {
+        let currentRoomIdx = -1;
+        let playerObj = null;
+        
+        for (let i = 0; i < roomMatchData.length; i++) {
+            let pIdx = roomMatchData[i].players.findIndex(p => p.name === playerName);
+            if (pIdx !== -1) {
+                currentRoomIdx = i;
+                playerObj = roomMatchData[i].players.splice(pIdx, 1)[0];
+                break;
+            }
+        }
+        
+        if (playerObj) {
+            let nextRoomIdx = (currentRoomIdx + 1) % roomMatchData.length;
+            roomMatchData[nextRoomIdx].players.push(playerObj);
+        }
+        
+        renderRoomBuilder();
+    }
+
+    function confirmRooms() {
+        let html = ''; clipboardText = "[🌐 네트워크 방전 배정 결과]\n\n";
+        
+        roomMatchData.sort((a,b)=>a.id-b.id).forEach(r => {
+            let sum = r.players.reduce((s, p) => s + p.handi, 0);
             let pStr = r.players.map(p=>`${p.name}(${formatHandi(p.handi)})`).join(' / ');
             let pureText = r.players.map(p=>p.name).join(', ');
-            html += `<div class="room-box"><div class="room-title">🚪 ${r.name} <span style="font-size:13px; color:#64748b; font-weight:normal;">(핸디합: ${formatHandi(r.sum)})</span></div><div class="room-members">${pStr}</div></div>`;
-            clipboardText += `🚪 ${r.name} (합:${formatHandi(r.sum)}): ${pureText}\n`;
+            html += `<div class="room-box"><div class="room-title">🚪 ${r.name} <span style="font-size:13px; color:#64748b; font-weight:normal;">(핸디합: ${formatHandi(sum)})</span></div><div class="room-members">${pStr || '<span style="color:#a0aec0;font-size:14px;">빈 방</span>'}</div></div>`;
+            clipboardText += `🚪 ${r.name} (합:${formatHandi(sum)}): ${pureText || '빈 방'}\n`;
         });
 
         document.getElementById('roomResultBox').innerHTML = html;
-        document.getElementById('room_step1').style.display='none'; document.getElementById('room_step2').style.display='block';
+        document.getElementById('room_step1_5').style.display='none'; 
+        document.getElementById('room_step2').style.display='block';
     }
 
     // =====================================================================
