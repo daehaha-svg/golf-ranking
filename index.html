@@ -55,7 +55,7 @@
         .team-a-title { color: #dc2626; border-color: #fca5a5; }
         .team-b-title { color: #2563eb; border-color: #93c5fd; }
         
-        /* ★ 수동 이동 태그 (드래그 지연 제거 및 그림자 효과만 남김) */
+        /* 수동 이동 태그 */
         .player-tag { display: block; padding: 10px; margin: 6px 0; background: white; border-radius: 6px; text-align: center; cursor: grab; font-size: 14px; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.1); user-select: none; touch-action: manipulation; }
         .player-tag.team-a { border-left: 4px solid #ef4444; color: #991b1b; }
         .player-tag.team-b { border-left: 4px solid #3b82f6; color: #1e3a8a; }
@@ -77,7 +77,7 @@
         .room-members { font-weight: bold; color: #1a365d; font-size: 15px; line-height: 1.5; }
         .rival-pair { display: inline-block; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e0; margin: 3px; font-size: 13px; }
         
-        /* ★ 드래그 앤 드롭 애니메이션 효과 최적화 */
+        /* 드래그 앤 드롭 애니메이션 효과 최적화 */
         .sortable-ghost { opacity: 0.3; background-color: #fef08a !important; }
         .sortable-drag { opacity: 1 !important; transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important; z-index: 9999; }
     </style>
@@ -171,7 +171,7 @@
                     <span>2. 팀 수동 편성 (드래그 앤 드롭)</span>
                     <button onclick="resetView('team')" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">인원 다시선택</button>
                 </p>
-                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* 멤버를 꾹 눌러서 원하는 <b>팀이나 깍두기 영역으로 드래그</b> 하세요.</p>
+                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* 멤버를 꾹 눌러서 원하는 <b>팀이나 깍두기 영역으로 드래그</b> 하세요. (터치 시 다음 팀으로 자동 이동)</p>
                 
                 <div class="team-board">
                     <div class="team-col">
@@ -197,7 +197,7 @@
                     <span>3. 대진표 조정 및 룰 선택</span>
                     <button onclick="document.getElementById('team_step2').style.display='none'; document.getElementById('team_step1_5').style.display='block';" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border:1px solid #ccc; background:#fff; cursor:pointer;">팀 다시짜기</button>
                 </p>
-                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* [☰] 핸들을 꾹 잡고 위아래로 끌어서 순서를 변경하세요.</p>
+                <p style="font-size: 11px; color:#64748b; margin-top:-10px;">* [☰] 핸들을 잡고 위아래로 끌어서 매치업 순서를 변경할 수 있습니다.</p>
 
                 <div class="mode-selector">
                     <label style="font-weight: bold; color: #3730a3; font-size: 13px;">🏆 팀 승패 결정 방식</label>
@@ -226,6 +226,7 @@
                     <div id="indiv_list_step2" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
                 </div>
 
+                <!-- 시트 연동을 위한 날짜 선택기 -->
                 <div style="margin-top: 20px; padding: 15px; background: #eff6ff; border-radius: 8px; border: 1px solid #bfdbfe;">
                     <label style="font-size:13px; font-weight:bold; color: #1e40af;">📅 타수를 불러올 경기 날짜 선택:</label>
                     <select id="teamMatchDateSelect" style="margin-top:8px; font-size:14px; font-weight:bold; color:#1e3a8a; width: 100%;"></select>
@@ -234,7 +235,7 @@
                     </p>
                 </div>
 
-                <button class="btn-action" id="btnCalcTeam" onclick="calculateTeamMatch()" style="background-color: #059669;">🔄 시트 연동하여 결과 보기</button>
+                <button class="btn-action" id="btnCalcTeam" onclick="calculateTeamMatch()" style="background-color: #059669;">🔄 시트 타수 연동하여 결과 보기</button>
             </div>
 
             <div id="team_step3" style="display: none;">
@@ -267,6 +268,7 @@
                 <button class="btn-action" onclick="generateRooms()">방 자동 배정 및 수정하기</button>
             </div>
 
+            <!-- ★ 방전 수동 편성 UI -->
             <div id="room_step1_5" style="display: none;">
                 <p style="font-size: 14px; font-weight: bold; color: #475569; display: flex; justify-content: space-between;">
                     <span>2. 방 수동 편성 (드래그 앤 드롭)</span>
@@ -344,6 +346,7 @@
     let sheetEntries = [];
     let latestSheetPlayers = [];
 
+    // Sortable 인스턴스 저장용 변수
     let sortableTeamA, sortableTeamB, sortableIndiv;
     let sortableStep2A, sortableStep2B;
     let roomSortables = [];
@@ -369,6 +372,13 @@
         if (score > 0) return `<span style="color:#2563eb;">+${score}</span>`;
         if (score < 0) return `<span style="color:#dc2626;">${score}</span>`;
         return `<span style="color:#111;">0</span>`;
+    }
+    
+    // ★ 카톡 복사용 텍스트 (순수 텍스트) 핸디캡 포맷터
+    function formatHandiText(score) {
+        if (score > 0) return `+${score}`;
+        if (score < 0) return `${score}`;
+        return `0`;
     }
 
     function copyToKakao() {
@@ -1183,8 +1193,11 @@
             let sum = r.players.reduce((s, p) => s + p.handi, 0);
             let pStr = r.players.map(p=>`${p.name}(${formatHandi(p.handi)})`).join(' / ');
             let pureText = r.players.map(p=>p.name).join(', ');
+            
             html += `<div class="room-box"><div class="room-title">🚪 ${r.name} <span style="font-size:13px; color:#64748b; font-weight:normal;">(핸디합: ${formatHandi(sum)})</span></div><div class="room-members">${pStr || '<span style="color:#a0aec0;font-size:14px;">빈 방</span>'}</div></div>`;
-            clipboardText += `🚪 ${r.name} (합:${formatHandi(sum)}): ${pureText || '빈 방'}\n`;
+            
+            // ★ 카톡 복사 텍스트에는 HTML 태그 없는 formatHandiText(sum) 적용!
+            clipboardText += `🚪 ${r.name} (합:${formatHandiText(sum)}): ${pureText || '빈 방'}\n`;
         });
 
         document.getElementById('roomResultBox').innerHTML = html;
